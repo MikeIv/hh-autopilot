@@ -1,3 +1,4 @@
+import './env'
 import { prisma } from '../server/utils/db'
 import { ApplyError, runApply } from '../server/services/apply'
 import type { ApplyResult } from '../shared/types/apply'

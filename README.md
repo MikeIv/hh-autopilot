@@ -1,56 +1,81 @@
 # hh-autopilot
 
+[![CI](https://github.com/MikeIv/hh-autopilot/actions/workflows/ci.yml/badge.svg)](https://github.com/MikeIv/hh-autopilot/actions/workflows/ci.yml)
+
 Локальный инструмент для поиска работы на hh: собирает вакансии под портрет
-кандидата из `resume-site/data/resume.yaml`, считает объяснимую оценку
-соответствия, готовит письмо и кладёт отклик в очередь ревью. Одобренные отклики
-уходят на hh через браузерный интерфейс с окном, лимитом и остановкой по капче.
+кандидата из YAML-резюме, считает объяснимую оценку соответствия, готовит письмо
+и кладёт отклик в очередь ревью. Одобренные отклики уходят на hh через браузерный
+интерфейс с окном, лимитом и остановкой по капче.
 
 **Автоматическая отправка откликов выключена по умолчанию** и включается только
 человеком на ограниченное время. Капча — остановка со статусом `needs_human`,
-а не обход.
+а не обход. Все данные остаются на вашей машине: инструмент общается только с hh.
 
-## Запуск
+## Что умеет
 
-```powershell
+- **Сбор** — поиск по региону, форматам и ключевым навыкам из резюме, разбор
+  выдачи, дедупликация и повторный сбор без потери истории.
+- **Скоринг** — объяснимая оценка по пяти критериям с весами и причинами; порог
+  отсечения настраивается.
+- **Письма** — три варианта под тип вакансии, только факты из резюме, лимит длины.
+- **Очередь ревью** — оценка, письмо, переключение варианта и решение
+  «Одобрить / Отклонить» в веб-интерфейсе.
+- **Отправка** — через UI hh, с дневным лимитом, окном по будням, паузами,
+  panic-кнопкой и остановкой по капче.
+
+## Требования
+
+- Node.js 22.19+, 24.11+ или 26+ и pnpm 11+;
+- Chromium для Playwright: `pnpm exec playwright install chromium`;
+- аккаунт hh — для сбора и отправки (логин вводит человек).
+
+## Быстрый старт
+
+```bash
 pnpm install
-Copy-Item .env.example .env   # один раз, локальные настройки
-pnpm db:reset                 # схема базы одной командой
+pnpm exec playwright install chromium
+cp .env.example .env          # Windows: Copy-Item .env.example .env
+cp data/resume.example.yaml data/resume.yaml  # или свой файл, см. ниже
+# в .env: RESUME_PATH="data/resume.yaml"
+pnpm db:reset                 # схема SQLite одной командой
+pnpm hh:login                 # видимое окно hh: логин, пароль и SMS вводите вы
 pnpm dev                      # http://127.0.0.1:3000
 ```
 
 `pnpm db:reset` удаляет `data/hh-autopilot.db` и накатывает миграции заново.
-База и `.env` в git не попадают.
+База, `.env` и профиль браузера в git не попадают.
 
 ### Если install падает на скачивании движков Prisma
 
-`ECONNRESET` от `binaries.prisma.sh` при `--tls-max-v1.2` лечится: Node 26 по
+`ECONNRESET` от `binaries.prisma.sh` при `--tls-max-v1.2` лечится так: Node 26 по
 умолчанию предлагает TLS 1.3 с гибридным post-quantum ключом, и не каждый край
-CDN это принимает. Установка с явным потолком TLS проходит:
+CDN это принимает.
 
-```powershell
-$env:NODE_OPTIONS='--tls-max-v1.2'
-pnpm install
+```bash
+NODE_OPTIONS=--tls-max-v1.2 pnpm install   # Windows: $env:NODE_OPTIONS='--tls-max-v1.2'
 ```
 
 Это ограничение машины и канала, а не проекта: в скрипты оно не зашито.
 
-## Проверки
+## Резюме
 
-```powershell
-pnpm verify   # eslint + prettier + typecheck + tests
-pnpm build    # сборка Nitro
+Портрет — подмножество вашего `resume.yaml`: роль и опыт, навыки, зарплата,
+форматы, `hh.portrait` и `hh.keywords`. Источник правды один — файл резюме; в
+проекте живут только zod-схема нужных блоков (`shared/schema/portrait.ts`) и
+загрузчик, копии данных нет. Начните с `data/resume.example.yaml` или укажите
+свой файл:
+
+```bash
+RESUME_PATH="../resume-site/data/resume.yaml"   # путь по умолчанию, если проект рядом с резюме-сайтом
+RESUME_PATH="data/resume.yaml"                  # относительный — от корня hh-autopilot
 ```
 
-## Портрет кандидата
-
-Портрет — подмножество `../resume-site/data/resume.yaml`: роль и опыт, навыки,
-зарплата, форматы, `hh.portrait` и `hh.keywords`. Источник правды один — файл
-резюме; в проекте живут только zod-схема нужных блоков и загрузчик, копии данных
-нет. Путь по умолчанию — соседний пакет, `RESUME_PATH` в `.env` перекрывает его.
+`RESUME_PATH` читается из `.env`; абсолютный путь берётся как есть. Личные данные
+резюме в репозиторий не коммитятся.
 
 ## Сбор вакансий
 
-```powershell
+```bash
 pnpm hh:collect                              # 4 запроса из портрета, по 1 странице
 pnpm hh:collect --query "Nuxt разработчик"   # сузить до одного запроса
 pnpm hh:collect --pages 3                    # глубже по выдаче
@@ -63,15 +88,17 @@ pnpm hh:apply:fixture 138950534 vacancy --form  # снять страницу в
 Сбор только читает выдачу: поиск по региону и форматам из портрета, разбор
 карточек, сохранение в SQLite без дублей по `hhId`, повторный сбор обновляет
 изменённые вакансии по отпечатку карточки. В карточке списка hh нет занятости,
-даты публикации и описания — эти поля остаются пустыми до отдельных волн.
+даты публикации и описания — эти поля остаются пустыми.
 
-Сессия — профиль Playwright `HH_PROFILE_DIR` (по умолчанию
-`../resume-site/.dsh/hh-profile`). Капча или истёкшая сессия — остановка с
+Сессия — профиль Playwright `HH_PROFILE_DIR` (`pnpm hh:login` создаёт его в
+`.dsh/hh-profile`, `.env.example` указывает туда же). Если проект лежит рядом с
+резюме-сайтом, можно не задавать переменную: код по умолчанию смотрит в
+`../resume-site/.dsh/hh-profile`. Капча или истёкшая сессия — остановка с
 сообщением, нужен человек; никакого обхода капчи в проекте нет.
 
 ## Скоринг
 
-```powershell
+```bash
 pnpm hh:score                 # оценить все вакансии в базе
 pnpm hh:score --threshold 75  # сменить порог отсечения и пересчитать
 ```
@@ -95,7 +122,7 @@ pnpm hh:score --threshold 75  # сменить порог отсечения и 
 
 ## Письма
 
-```powershell
+```bash
 pnpm hh:letters   # письма для вакансий, прошедших порог
 ```
 
@@ -112,7 +139,7 @@ pnpm hh:letters   # письма для вакансий, прошедших п�
 
 ## Очередь ревью
 
-```powershell
+```bash
 pnpm dev   # http://127.0.0.1:3000
 ```
 
@@ -142,7 +169,7 @@ API: `GET /api/queue`, `POST /api/queue/decision`, `POST /api/queue/letter`.
   снимает флаг;
 - повторный прогон не дублирует отклик: в работу попадают только `approved`.
 
-```powershell
+```bash
 pnpm hh:apply             # сухой прогон, если HH_AUTO_APPLY выключен
 pnpm hh:apply --dry-run   # принудительно сухой
 pnpm hh:apply --limit 3   # живой прогон не больше трёх откликов
@@ -158,6 +185,29 @@ API: `GET /api/apply` (состояние окна, лимита, panic и по�
 `POST /api/apply/panic` и `DELETE /api/apply/panic`. Каждое действие и каждая
 остановка пишутся в `ActionLog`, прогон — в `Run` со статистикой.
 
+## Безопасность и ограничения
+
+- Инструмент локальный: база, письма и профиль браузера не покидают машину.
+- Капча не обходится: она останавливает прогон и требует человека.
+- Отклик уходит только после решения человека в очереди; авто-режим выключен.
+- hh может менять разметку — селекторы с запасными вариантами живут в
+  `shared/utils/apply-page.ts`, `server/services/hh-apply.ts` и покрыты
+  фикстурами; при изменениях hh снимите свежие фикстуры (`hh:fixture`,
+  `hh:apply:fixture`).
+- Автоматизация действий на hh — на ваш риск и по правилам площадки; инструмент
+  не предназначен для массовых рассылок и обхода ограничений.
+
+## Проверки
+
+```bash
+pnpm verify   # eslint + prettier + typecheck + tests
+pnpm build    # сборка Nitro
+```
+
+CI (`.github/workflows/ci.yml`) гоняет `pnpm verify` и `pnpm build` на каждый push
+в `main` и на pull request. Тесты не требуют личного резюме: локально в `setup.ts`
+подхватывается настоящий `resume.yaml`, в публичном клоне — `data/resume.example.yaml`.
+
 ## Что где
 
 | Что                                     | Путь                                                  |
@@ -165,12 +215,15 @@ API: `GET /api/apply` (состояние окна, лимита, panic и по�
 | Схема базы и миграции                   | `prisma/schema.prisma`, `prisma/migrations/`          |
 | Статусы и union-типы                    | `shared/types/domain.ts`                              |
 | Схема портрета из `resume.yaml`         | `shared/schema/portrait.ts`                           |
+| Пример резюме                           | `data/resume.example.yaml`                            |
 | Контракт портрета (`CandidatePortrait`) | `shared/types/portrait.ts`                            |
 | Разбор YAML в портрет                   | `shared/utils/portrait.ts`                            |
 | Загрузка портрета с путём из env        | `server/utils/portrait.ts` (`loadPortrait`)           |
 | Запросы и фильтры поиска hh             | `shared/utils/hh-search.ts`                           |
 | Разбор выдачи hh в карточки             | `shared/utils/serp.ts`                                |
 | Сессия hh и стоп-сигналы                | `server/utils/hh-session.ts`                          |
+| CLI входа на hh                         | `scripts/hh-login.ts`                                 |
+| Загрузка `.env` для CLI                 | `scripts/env.ts`                                      |
 | Сбор выдачи и сохранение                | `server/services/collector.ts`                        |
 | Скоринг и объяснение критериев          | `shared/utils/scorer.ts`                              |
 | Контракт оценки (`ScoreResult`)         | `shared/types/score.ts`                               |
@@ -200,3 +253,8 @@ API: `GET /api/apply` (состояние окна, лимита, panic и по�
 | Тесты писем                             | `tests/letter.spec.ts`                                |
 | Тесты очереди и решений                 | `tests/queue.spec.ts`                                 |
 | Тесты отправки и предохранителей        | `tests/apply.spec.ts`                                 |
+| Подготовка тестового окружения          | `tests/setup.ts`, `vitest.config.ts`                  |
+
+## Лицензия
+
+[MIT](LICENSE) © Mike Ivanov

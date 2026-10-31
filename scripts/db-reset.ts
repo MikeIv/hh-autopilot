@@ -1,3 +1,4 @@
+import './env'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { execFile } from 'node:child_process'

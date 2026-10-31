@@ -2,7 +2,25 @@
   "name": "hh-autopilot",
   "type": "module",
   "private": true,
-  "description": "Локальный подбор вакансий hh под портрет кандидата: сбор, скоринг, письма, очередь ревью",
+  "description": "Local hh.ru job-search autopilot: collect, score, write letters, review and send applications with human approval",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MikeIv/hh-autopilot.git"
+  },
+  "homepage": "https://github.com/MikeIv/hh-autopilot#readme",
+  "bugs": {
+    "url": "https://github.com/MikeIv/hh-autopilot/issues"
+  },
+  "keywords": [
+    "hh",
+    "hh.ru",
+    "job-search",
+    "nuxt",
+    "playwright",
+    "prisma",
+    "autopilot"
+  ],
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
@@ -18,6 +36,7 @@
     "test": "vitest run",
     "verify": "pnpm lint:all && pnpm typecheck && pnpm test",
     "hh:collect": "tsx scripts/collect.ts",
+    "hh:login": "tsx scripts/hh-login.ts",
     "hh:score": "tsx scripts/score.ts",
     "hh:letters": "tsx scripts/letters.ts",
     "hh:apply": "tsx scripts/apply.ts",

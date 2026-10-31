@@ -1,3 +1,4 @@
+import './env'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { loadPortrait } from '../server/utils/portrait'

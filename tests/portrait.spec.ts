@@ -5,8 +5,11 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import { DEFAULT_RESUME_PATH, loadPortrait, resolveResumePath } from '../server/utils/portrait'
 import { parsePortrait } from '../shared/utils/portrait'
 
-/** Реальное `resume.yaml` соседнего пакета: портрет проверяется на живых данных. */
-const REAL_RESUME = join(process.cwd(), '..', 'resume-site', 'data', 'resume.yaml')
+/** Портрет для проверок: локально — настоящий resume.yaml, в публичном клоне — пример. */
+const RESUME_FILE = resolveResumePath()
+
+/** Путь по умолчанию: соседний пакет resume-site, он же описан в README. */
+const DEFAULT_RESUME_FILE = join(process.cwd(), '..', 'resume-site', 'data', 'resume.yaml')
 
 /** Минимальный портрет для подмены пути: те же блоки, но свои значения. */
 const MINIMAL_PORTRAIT = `basics:
@@ -51,8 +54,8 @@ afterEach(() => {
 
 describe('путь к портрету', () => {
   it('по умолчанию — соседний пакет resume-site', () => {
-    expect(DEFAULT_RESUME_PATH).toBe(REAL_RESUME)
-    expect(resolveResumePath('')).toBe(REAL_RESUME)
+    expect(DEFAULT_RESUME_PATH).toBe(DEFAULT_RESUME_FILE)
+    expect(resolveResumePath('')).toBe(DEFAULT_RESUME_FILE)
   })
 
   it('относительный путь из RESUME_PATH считается от корня проекта', () => {
@@ -60,13 +63,13 @@ describe('путь к портрету', () => {
   })
 
   it('абсолютный путь из RESUME_PATH берётся как есть', () => {
-    expect(resolveResumePath(REAL_RESUME)).toBe(REAL_RESUME)
+    expect(resolveResumePath(RESUME_FILE)).toBe(RESUME_FILE)
   })
 })
 
-describe('портрет из реального resume.yaml', () => {
+describe('портрет из resume.yaml', () => {
   it('читается и проходит схему', async () => {
-    vi.stubEnv('RESUME_PATH', REAL_RESUME)
+    vi.stubEnv('RESUME_PATH', RESUME_FILE)
     const portrait = await loadPortrait()
 
     expect(portrait.basics.label).toContain('Nuxt')
@@ -81,7 +84,7 @@ describe('портрет из реального resume.yaml', () => {
   })
 
   it('оставляет только блоки портрета: второй источник правды не заводим', async () => {
-    vi.stubEnv('RESUME_PATH', REAL_RESUME)
+    vi.stubEnv('RESUME_PATH', RESUME_FILE)
     const portrait = await loadPortrait()
 
     expect(Object.keys(portrait).sort()).toEqual([
@@ -94,7 +97,7 @@ describe('портрет из реального resume.yaml', () => {
   })
 
   it('берёт ранний опыт: по нему считается начало стажа', async () => {
-    vi.stubEnv('RESUME_PATH', REAL_RESUME)
+    vi.stubEnv('RESUME_PATH', RESUME_FILE)
     const portrait = await loadPortrait()
 
     expect(portrait.earlyExperience).toHaveLength(3)
@@ -113,8 +116,8 @@ describe('портрет из реального resume.yaml', () => {
     expect(portrait.hh.keywords).toEqual(['Nuxt', 'TypeScript'])
   })
 
-  it('читает относительный путь из RESUME_PATH так же, как значение по умолчанию', async () => {
-    vi.stubEnv('RESUME_PATH', '../resume-site/data/resume.yaml')
+  it('читает относительный путь из RESUME_PATH от корня проекта', async () => {
+    vi.stubEnv('RESUME_PATH', 'data/resume.example.yaml')
 
     const portrait = await loadPortrait()
 
@@ -132,7 +135,7 @@ describe('портрет из реального resume.yaml', () => {
 
 describe('схема портрета', () => {
   it('отклоняет неизвестный формат занятости', async () => {
-    const raw = await readFile(REAL_RESUME, 'utf8')
+    const raw = await readFile(RESUME_FILE, 'utf8')
     const broken = raw.replace('formats: [remote, hybrid, office]', 'formats: [remote, planet]')
 
     expect(broken).not.toBe(raw)

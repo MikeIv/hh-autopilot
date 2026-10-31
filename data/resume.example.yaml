@@ -1,0 +1,91 @@
+# Портрет кандидата для hh-autopilot: подмножество настоящего resume.yaml.
+# Это пример формата для публичного репозитория, а не данные автора: подставьте
+# своё резюме и укажите путь в RESUME_PATH. Неизвестные ключи схема отбрасывает.
+basics:
+  label: Nuxt fullstack разработчик (Nuxt, TypeScript)
+  headline: Собираю полный цикл на Nuxt и Nitro — интерфейс, сервер, тесты и деплой.
+  summary: Пример кандидата для публичной демонстрации инструмента.
+  location: { city: Москва, countryCode: RU }
+  formats: [remote, hybrid, office]
+  salary: { amount: 225000, currency: RUR, period: month }
+
+experience:
+  - company: Пример Продукт
+    position: Senior fullstack разработчик
+    from: 2022-01
+    to: null
+    summary: Продуктовая B2B-платформа для заказов и логистики.
+    achievements:
+      - Вывел оформление заказа на Nuxt 4 с серверными эндпоинтами Nitro.
+      - Закрыл критичные сценарии тестами Vitest и Playwright.
+    stack: [Nuxt, Vue, TypeScript, Nitro]
+
+  - company: Пример Студия
+    position: Fullstack разработчик
+    from: 2020-01
+    to: 2021-12
+    summary: Коммерческая разработка сайтов и личных кабинетов на заказ.
+    achievements:
+      - Собрал десять проектов на Vue и Nuxt с нуля.
+    stack: [Vue, Nuxt, Node.js]
+
+  - company: Пример Агентство
+    position: Frontend разработчик
+    from: 2018-01
+    to: 2019-12
+    summary: Промо-сайты и лендинги для клиентов агентства.
+    achievements:
+      - Перевёл вёрстку на компоненты Vue.
+    stack: [Vue, JavaScript]
+
+skills:
+  - group: Frontend
+    items: [Vue 3, Nuxt 4, TypeScript, SCSS]
+
+  - group: Backend
+    items: [Node.js, Nitro, Prisma, SQLite]
+
+  - group: Инструменты
+    items: [Vitest, Playwright, ESLint, Docker]
+
+earlyExperience:
+  - period: 2019–2021 — фриланс
+    text: 'Веб-разработка на заказ: сайты, лендинги, правки на WordPress.'
+  - period: 2017–2018
+    text: Первые коммерческие проекты на JavaScript и Vue.
+  - period: 2020 — дизайнер и разработчик
+    text: Работал дизайнером и верстал сайты в небольшой студии.
+
+hh:
+  keywords:
+    [
+      Nuxt,
+      Vue,
+      TypeScript,
+      JavaScript,
+      Node.js,
+      Nitro,
+      Prisma,
+      SQLite,
+      SCSS,
+      HTML,
+      CSS,
+      Vitest,
+      Playwright,
+      ESLint,
+      Docker,
+      REST,
+      JSON,
+      Git,
+      Vite,
+      Nuxt UI,
+      Pinia,
+      i18n,
+      SSR,
+      SPA,
+    ]
+  portrait:
+    domain: Продуктовый веб и B2B-платформы
+    product: Nuxt и Nitro с тестами и понятным деплоем
+    team: Команда с тимлидом и код-ревью
+    process: CI, тесты, короткие итерации

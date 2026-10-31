@@ -1,3 +1,4 @@
+import './env'
 import { prisma } from '../server/utils/db'
 import { generateLetters } from '../server/services/letter'
 

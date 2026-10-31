@@ -1,3 +1,4 @@
+import './env'
 import { prisma } from '../server/utils/db'
 import { loadPortrait } from '../server/utils/portrait'
 import { collectPortrait } from '../server/services/collector'

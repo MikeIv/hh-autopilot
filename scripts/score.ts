@@ -1,3 +1,4 @@
+import './env'
 import { prisma } from '../server/utils/db'
 import { saveScoreThreshold, scoreAllVacancies } from '../server/services/scorer'
 

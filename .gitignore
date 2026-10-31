@@ -19,10 +19,11 @@ data/*.db-shm
 .env.*
 !.env.example
 
-# Agent: итоги волн и планы — локальные, в публикацию не идут
-.planning/brief.md
-.planning/plan.md
-.planning/state.md
+# Agent: планы, состояние и итоги волн — локальные, в публикацию не идут
+.planning/
+
+# Профиль браузера с сессией hh — личное, не публикуется
+.dsh/
 
 # IDE
 .vscode
