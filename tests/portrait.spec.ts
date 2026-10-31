@@ -84,7 +84,22 @@ describe('портрет из реального resume.yaml', () => {
     vi.stubEnv('RESUME_PATH', REAL_RESUME)
     const portrait = await loadPortrait()
 
-    expect(Object.keys(portrait).sort()).toEqual(['basics', 'experience', 'hh', 'skills'])
+    expect(Object.keys(portrait).sort()).toEqual([
+      'basics',
+      'earlyExperience',
+      'experience',
+      'hh',
+      'skills',
+    ])
+  })
+
+  it('берёт ранний опыт: по нему считается начало стажа', async () => {
+    vi.stubEnv('RESUME_PATH', REAL_RESUME)
+    const portrait = await loadPortrait()
+
+    expect(portrait.earlyExperience).toHaveLength(3)
+    expect(portrait.earlyExperience?.[0]?.period).toMatch(/^2019/)
+    expect(portrait.earlyExperience?.at(-1)?.text).toMatch(/дизайнер/i)
   })
 
   it('берёт путь из RESUME_PATH', async () => {

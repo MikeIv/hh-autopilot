@@ -13,6 +13,7 @@ export type PortraitSalary = PortraitBasics['salary']
 export type WorkFormat = PortraitBasics['formats'][number]
 
 export type PortraitExperience = CandidatePortrait['experience'][number]
+export type PortraitEarlyExperience = NonNullable<CandidatePortrait['earlyExperience']>[number]
 export type PortraitSkillGroup = CandidatePortrait['skills'][number]
 /** Желаемые критерии работы (`hh.portrait` в источнике). */
 export type PortraitCriteria = CandidatePortrait['hh']['portrait']

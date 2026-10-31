@@ -47,6 +47,12 @@ export const portraitSkillGroupSchema = z.object({
   items: z.array(nonEmpty).min(1),
 })
 
+/** Ранний опыт: период в прозе источника и текст; по нему считается начало стажа. */
+export const portraitEarlyExperienceSchema = z.object({
+  period: nonEmpty,
+  text: nonEmpty,
+})
+
 /** Желаемые критерии работы: в какой области, на каком продукте, в какой команде. */
 export const portraitCriteriaSchema = z.object({
   domain: nonEmpty,
@@ -73,4 +79,6 @@ export const candidatePortraitSchema = z.object({
   experience: z.array(portraitExperienceSchema).min(1),
   skills: z.array(portraitSkillGroupSchema).min(1),
   hh: portraitHhSchema,
+  /** Необязателен: без него стаж считается только по основному блоку опыта. */
+  earlyExperience: z.array(portraitEarlyExperienceSchema).min(1).optional(),
 })

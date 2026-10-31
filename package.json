@@ -18,6 +18,7 @@
     "test": "vitest run",
     "verify": "pnpm lint:all && pnpm typecheck && pnpm test",
     "hh:collect": "tsx scripts/collect.ts",
+    "hh:score": "tsx scripts/score.ts",
     "hh:fixture": "tsx scripts/capture-serp.ts"
   },
   "dependencies": {

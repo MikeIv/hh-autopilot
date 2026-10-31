@@ -65,24 +65,53 @@ pnpm hh:fixture "Nuxt разработчик" nuxt      # снять выдач�
 `../resume-site/.dsh/hh-profile`). Капча или истёкшая сессия — остановка с
 сообщением, нужен человек; никакого обхода капчи в проекте нет.
 
+## Скоринг
+
+```powershell
+pnpm hh:score                 # оценить все вакансии в базе
+pnpm hh:score --threshold 75  # сменить порог отсечения и пересчитать
+```
+
+Веса критериев (сумма — 100): стек 35, роль и домен 25, формат и занятость 15,
+опыт 15, зарплата 10. Порог отсечения по умолчанию 65 и живёт в настройке
+`score.threshold`. Оценка объяснимая: у каждого критерия есть вес, заработанные
+баллы и причина — они пишутся в `Score.criteria` и показываются в очереди ревью.
+
+Правила, которые стоит знать:
+
+- стек — полный балл с трёх совпавших технологий портрета, одна-две дают долю;
+- роль и домен — слово роли и профиль из заголовка резюме; домен проверяется по
+  описанию вакансии, а из выдачи описание не приходит, поэтому критерий честно
+  пишет «домен не проверен»;
+- формат — совпадение метки hh с `basics.formats`; отсутствие метки считается
+  неизвестным (половина веса), а не провалом;
+- опыт — стаж от начала веб-опыта в резюме против требования hh;
+- зарплата — верх вилки против пожелания; нет вилки или другая валюта —
+  неизвестно, половина веса.
+
 ## Что где
 
-| Что                                     | Путь                                            |
-| --------------------------------------- | ----------------------------------------------- |
-| Схема базы и миграции                   | `prisma/schema.prisma`, `prisma/migrations/`    |
-| Статусы и union-типы                    | `shared/types/domain.ts`                        |
-| Схема портрета из `resume.yaml`         | `shared/schema/portrait.ts`                     |
-| Контракт портрета (`CandidatePortrait`) | `shared/types/portrait.ts`                      |
-| Разбор YAML в портрет                   | `shared/utils/portrait.ts`                      |
-| Загрузка портрета с путём из env        | `server/utils/portrait.ts` (`loadPortrait`)     |
-| Запросы и фильтры поиска hh             | `shared/utils/hh-search.ts`                     |
-| Разбор выдачи hh в карточки             | `shared/utils/serp.ts`                          |
-| Сессия hh и стоп-сигналы                | `server/utils/hh-session.ts`                    |
-| Сбор выдачи и сохранение                | `server/services/collector.ts`                  |
-| CLI сбора                               | `scripts/collect.ts`, `scripts/capture-serp.ts` |
-| Фикстуры выдачи для тестов              | `tests/fixtures/serp/`                          |
-| Клиент Prisma                           | `server/utils/db.ts`                            |
-| Проверка связки «сервер → база»         | `server/api/health.get.ts`                      |
-| Тесты схемы                             | `tests/db.spec.ts`                              |
-| Тесты портрета                          | `tests/portrait.spec.ts`                        |
-| Тесты разбора и сохранения выдачи       | `tests/serp.spec.ts`, `tests/collector.spec.ts` |
+| Что                                     | Путь                                                |
+| --------------------------------------- | --------------------------------------------------- |
+| Схема базы и миграции                   | `prisma/schema.prisma`, `prisma/migrations/`        |
+| Статусы и union-типы                    | `shared/types/domain.ts`                            |
+| Схема портрета из `resume.yaml`         | `shared/schema/portrait.ts`                         |
+| Контракт портрета (`CandidatePortrait`) | `shared/types/portrait.ts`                          |
+| Разбор YAML в портрет                   | `shared/utils/portrait.ts`                          |
+| Загрузка портрета с путём из env        | `server/utils/portrait.ts` (`loadPortrait`)         |
+| Запросы и фильтры поиска hh             | `shared/utils/hh-search.ts`                         |
+| Разбор выдачи hh в карточки             | `shared/utils/serp.ts`                              |
+| Сессия hh и стоп-сигналы                | `server/utils/hh-session.ts`                        |
+| Сбор выдачи и сохранение                | `server/services/collector.ts`                      |
+| Скоринг и объяснение критериев          | `shared/utils/scorer.ts`                            |
+| Контракт оценки (`ScoreResult`)         | `shared/types/score.ts`                             |
+| Оценка базы и настройка порога          | `server/services/scorer.ts`                         |
+| CLI сбора                               | `scripts/collect.ts`, `scripts/capture-serp.ts`     |
+| CLI скоринга                            | `scripts/score.ts`                                  |
+| Фикстуры выдачи для тестов              | `tests/fixtures/serp/`                              |
+| Клиент Prisma                           | `server/utils/db.ts`                                |
+| Проверка связки «сервер → база»         | `server/api/health.get.ts`                          |
+| Тесты схемы                             | `tests/db.spec.ts`                                  |
+| Тесты портрета                          | `tests/portrait.spec.ts`                            |
+| Тесты разбора и сохранения выдачи       | `tests/serp.spec.ts`, `tests/collector.spec.ts`     |
+| Тесты скоринга                          | `tests/scorer.spec.ts`, `tests/score-store.spec.ts` |

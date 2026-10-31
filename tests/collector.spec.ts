@@ -1,22 +1,15 @@
-import { execFileSync } from 'node:child_process'
-import { createRequire } from 'node:module'
-import { rm } from 'node:fs/promises'
-import { join } from 'node:path'
-import { PrismaClient } from '@prisma/client'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import type { PrismaClient } from '@prisma/client'
 import { saveCards } from '../server/services/collector'
 import { buildSearchUrl, hhArea, hhWorkFormats, searchQueries } from '../shared/utils/hh-search'
 import { loadPortrait } from '../server/utils/portrait'
 import type { VacancyCard } from '../shared/types/vacancy'
+import { openTempDatabase } from './temp-db'
 
 /**
  * Сохранение выдачи проверяется на временной базе: миграции те же, схема та же.
  * Сеть не нужна — карточки собираются руками из тех же полей, что даёт разбор.
  */
-const DB_FILE = join(process.cwd(), 'data', `collector-${process.pid}.db`)
-const DB_URL = `file:../data/collector-${process.pid}.db`
-const prismaCli = createRequire(import.meta.url).resolve('prisma/build/index.js')
-
 function card(hhId: string, overrides: Partial<VacancyCard> = {}): VacancyCard {
   return {
     hhId,
@@ -34,20 +27,16 @@ function card(hhId: string, overrides: Partial<VacancyCard> = {}): VacancyCard {
 }
 
 let prisma: PrismaClient
+let close: () => Promise<void>
 
-beforeAll(() => {
-  execFileSync(process.execPath, [prismaCli, 'migrate', 'deploy'], {
-    env: { ...process.env, DATABASE_URL: DB_URL },
-    stdio: 'pipe',
-  })
-
-  prisma = new PrismaClient({ datasources: { db: { url: DB_URL } } })
+beforeAll(async () => {
+  const db = await openTempDatabase('collector')
+  prisma = db.client
+  close = db.close
 })
 
 afterAll(async () => {
-  await prisma.$disconnect()
-  await rm(DB_FILE, { force: true })
-  await rm(`${DB_FILE}-journal`, { force: true })
+  await close()
 })
 
 describe('запросы и фильтры из портрета', () => {
