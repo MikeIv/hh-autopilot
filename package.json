@@ -1,0 +1,45 @@
+{
+  "name": "hh-autopilot",
+  "type": "module",
+  "private": true,
+  "description": "Локальный подбор вакансий hh под портрет кандидата: сбор, скоринг, письма, очередь ревью",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "postinstall": "prisma generate && nuxt prepare",
+    "db:migrate": "prisma migrate deploy",
+    "db:reset": "tsx scripts/db-reset.ts",
+    "db:studio": "prisma studio",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "lint:all": "eslint . && pnpm format:check",
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run",
+    "verify": "pnpm lint:all && pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.3",
+    "nuxt": "^4.6.3",
+    "vue": "^3.5.41",
+    "vue-router": "^5.2.0"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.15.2",
+    "@types/node": "^25.7.0",
+    "eslint": "^10.3.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "prettier": "^3.8.3",
+    "prisma": "6.19.3",
+    "tsx": "^4.23.15",
+    "typescript": "~5.8.3",
+    "vitest": "^5.0.5",
+    "vue-tsc": "^3.2.8",
+    "zod": "^4.6.7"
+  },
+  "engines": {
+    "node": "^22.19.0 || ^24.11.0 || >=26.0.0",
+    "pnpm": ">=11"
+  }
+}

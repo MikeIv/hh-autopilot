@@ -1,0 +1,11 @@
+node_modules
+.pnpm-store
+.nuxt
+.nitro
+.data
+.cache
+.output
+dist
+pnpm-lock.yaml
+coverage
+.idea

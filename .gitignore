@@ -1,0 +1,24 @@
+# Зависимости и сборка
+node_modules
+.pnpm-store
+.nuxt
+.output
+.nitro
+.cache
+dist
+coverage
+
+# Локальная база и её журналы — не публикуются
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
+# Секреты и локальные настройки
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
