@@ -103,32 +103,49 @@ pnpm hh:letters   # письма для вакансий, прошедших п�
 граница. Почта, телефон и ссылки в письмо не попадают, цифры — только из резюме
 и вакансии.
 
+## Очередь ревью
+
+```powershell
+pnpm dev   # http://127.0.0.1:3000
+```
+
+Страница показывает вакансии, прошедшие порог: оценку с причинами по критериям,
+готовое письмо и ссылку на hh. Кнопки «Одобрить / Отклонить» пишут статус в
+`Application`; отправка откликов появится в волне 7, поэтому счётчики показывают
+только решения. Дневной лимит — 20 откликов, он же верхняя граница счётчиков.
+API: `GET /api/queue`, `POST /api/queue/decision`.
+
 ## Что где
 
-| Что                                     | Путь                                                |
-| --------------------------------------- | --------------------------------------------------- |
-| Схема базы и миграции                   | `prisma/schema.prisma`, `prisma/migrations/`        |
-| Статусы и union-типы                    | `shared/types/domain.ts`                            |
-| Схема портрета из `resume.yaml`         | `shared/schema/portrait.ts`                         |
-| Контракт портрета (`CandidatePortrait`) | `shared/types/portrait.ts`                          |
-| Разбор YAML в портрет                   | `shared/utils/portrait.ts`                          |
-| Загрузка портрета с путём из env        | `server/utils/portrait.ts` (`loadPortrait`)         |
-| Запросы и фильтры поиска hh             | `shared/utils/hh-search.ts`                         |
-| Разбор выдачи hh в карточки             | `shared/utils/serp.ts`                              |
-| Сессия hh и стоп-сигналы                | `server/utils/hh-session.ts`                        |
-| Сбор выдачи и сохранение                | `server/services/collector.ts`                      |
-| Скоринг и объяснение критериев          | `shared/utils/scorer.ts`                            |
-| Контракт оценки (`ScoreResult`)         | `shared/types/score.ts`                             |
-| Оценка базы и настройка порога          | `server/services/scorer.ts`                         |
-| Письма: варианты, лимит, факты          | `shared/utils/letter.ts`, `shared/types/letter.ts`  |
-| Генерация писем в базе                  | `server/services/letter.ts`                         |
-| CLI сбора                               | `scripts/collect.ts`, `scripts/capture-serp.ts`     |
-| CLI скоринга и писем                    | `scripts/score.ts`, `scripts/letters.ts`            |
-| Фикстуры выдачи для тестов              | `tests/fixtures/serp/`                              |
-| Клиент Prisma                           | `server/utils/db.ts`                                |
-| Проверка связки «сервер → база»         | `server/api/health.get.ts`                          |
-| Тесты схемы                             | `tests/db.spec.ts`                                  |
-| Тесты портрета                          | `tests/portrait.spec.ts`                            |
-| Тесты разбора и сохранения выдачи       | `tests/serp.spec.ts`, `tests/collector.spec.ts`     |
-| Тесты скоринга                          | `tests/scorer.spec.ts`, `tests/score-store.spec.ts` |
-| Тесты писем                             | `tests/letter.spec.ts`                              |
+| Что                                     | Путь                                                  |
+| --------------------------------------- | ----------------------------------------------------- |
+| Схема базы и миграции                   | `prisma/schema.prisma`, `prisma/migrations/`          |
+| Статусы и union-типы                    | `shared/types/domain.ts`                              |
+| Схема портрета из `resume.yaml`         | `shared/schema/portrait.ts`                           |
+| Контракт портрета (`CandidatePortrait`) | `shared/types/portrait.ts`                            |
+| Разбор YAML в портрет                   | `shared/utils/portrait.ts`                            |
+| Загрузка портрета с путём из env        | `server/utils/portrait.ts` (`loadPortrait`)           |
+| Запросы и фильтры поиска hh             | `shared/utils/hh-search.ts`                           |
+| Разбор выдачи hh в карточки             | `shared/utils/serp.ts`                                |
+| Сессия hh и стоп-сигналы                | `server/utils/hh-session.ts`                          |
+| Сбор выдачи и сохранение                | `server/services/collector.ts`                        |
+| Скоринг и объяснение критериев          | `shared/utils/scorer.ts`                              |
+| Контракт оценки (`ScoreResult`)         | `shared/types/score.ts`                               |
+| Оценка базы и настройка порога          | `server/services/scorer.ts`                           |
+| Письма: варианты, лимит, факты          | `shared/utils/letter.ts`, `shared/types/letter.ts`    |
+| Генерация писем в базе                  | `server/services/letter.ts`                           |
+| Очередь ревью и решения                 | `server/services/queue.ts`, `shared/types/queue.ts`   |
+| API очереди                             | `server/api/queue/`                                   |
+| Страница и карточка очереди             | `app/pages/index.vue`, `app/components/QueueCard.vue` |
+| Загрузка и решения на клиенте           | `app/composables/useQueue.ts`                         |
+| CLI сбора                               | `scripts/collect.ts`, `scripts/capture-serp.ts`       |
+| CLI скоринга и писем                    | `scripts/score.ts`, `scripts/letters.ts`              |
+| Фикстуры выдачи для тестов              | `tests/fixtures/serp/`                                |
+| Клиент Prisma                           | `server/utils/db.ts`                                  |
+| Проверка связки «сервер → база»         | `server/api/health.get.ts`                            |
+| Тесты схемы                             | `tests/db.spec.ts`                                    |
+| Тесты портрета                          | `tests/portrait.spec.ts`                              |
+| Тесты разбора и сохранения выдачи       | `tests/serp.spec.ts`, `tests/collector.spec.ts`       |
+| Тесты скоринга                          | `tests/scorer.spec.ts`, `tests/score-store.spec.ts`   |
+| Тесты писем                             | `tests/letter.spec.ts`                                |
+| Тесты очереди и решений                 | `tests/queue.spec.ts`                                 |
