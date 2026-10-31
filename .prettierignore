@@ -9,3 +9,6 @@ dist
 pnpm-lock.yaml
 coverage
 .idea
+
+# Сохранённые страницы hh: форматировать чужую разметку смысла нет
+tests/fixtures

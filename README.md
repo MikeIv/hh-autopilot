@@ -47,17 +47,42 @@ pnpm build    # сборка Nitro
 резюме; в проекте живут только zod-схема нужных блоков и загрузчик, копии данных
 нет. Путь по умолчанию — соседний пакет, `RESUME_PATH` в `.env` перекрывает его.
 
+## Сбор вакансий
+
+```powershell
+pnpm hh:collect                              # 4 запроса из портрета, по 1 странице
+pnpm hh:collect --query "Nuxt разработчик"   # сузить до одного запроса
+pnpm hh:collect --pages 3                    # глубже по выдаче
+pnpm hh:fixture "Nuxt разработчик" nuxt      # снять выдачу в HTML-фикстуру
+```
+
+Сбор только читает выдачу: поиск по региону и форматам из портрета, разбор
+карточек, сохранение в SQLite без дублей по `hhId`, повторный сбор обновляет
+изменённые вакансии по отпечатку карточки. В карточке списка hh нет занятости,
+даты публикации и описания — эти поля остаются пустыми до отдельных волн.
+
+Сессия — профиль Playwright `HH_PROFILE_DIR` (по умолчанию
+`../resume-site/.dsh/hh-profile`). Капча или истёкшая сессия — остановка с
+сообщением, нужен человек; никакого обхода капчи в проекте нет.
+
 ## Что где
 
-| Что                                     | Путь                                         |
-| --------------------------------------- | -------------------------------------------- |
-| Схема базы и миграции                   | `prisma/schema.prisma`, `prisma/migrations/` |
-| Статусы и union-типы                    | `shared/types/domain.ts`                     |
-| Схема портрета из `resume.yaml`         | `shared/schema/portrait.ts`                  |
-| Контракт портрета (`CandidatePortrait`) | `shared/types/portrait.ts`                   |
-| Разбор YAML в портрет                   | `shared/utils/portrait.ts`                   |
-| Загрузка портрета с путём из env        | `server/utils/portrait.ts` (`loadPortrait`)  |
-| Клиент Prisma                           | `server/utils/db.ts`                         |
-| Проверка связки «сервер → база»         | `server/api/health.get.ts`                   |
-| Тесты схемы                             | `tests/db.spec.ts`                           |
-| Тесты портрета                          | `tests/portrait.spec.ts`                     |
+| Что                                     | Путь                                            |
+| --------------------------------------- | ----------------------------------------------- |
+| Схема базы и миграции                   | `prisma/schema.prisma`, `prisma/migrations/`    |
+| Статусы и union-типы                    | `shared/types/domain.ts`                        |
+| Схема портрета из `resume.yaml`         | `shared/schema/portrait.ts`                     |
+| Контракт портрета (`CandidatePortrait`) | `shared/types/portrait.ts`                      |
+| Разбор YAML в портрет                   | `shared/utils/portrait.ts`                      |
+| Загрузка портрета с путём из env        | `server/utils/portrait.ts` (`loadPortrait`)     |
+| Запросы и фильтры поиска hh             | `shared/utils/hh-search.ts`                     |
+| Разбор выдачи hh в карточки             | `shared/utils/serp.ts`                          |
+| Сессия hh и стоп-сигналы                | `server/utils/hh-session.ts`                    |
+| Сбор выдачи и сохранение                | `server/services/collector.ts`                  |
+| CLI сбора                               | `scripts/collect.ts`, `scripts/capture-serp.ts` |
+| Фикстуры выдачи для тестов              | `tests/fixtures/serp/`                          |
+| Клиент Prisma                           | `server/utils/db.ts`                            |
+| Проверка связки «сервер → база»         | `server/api/health.get.ts`                      |
+| Тесты схемы                             | `tests/db.spec.ts`                              |
+| Тесты портрета                          | `tests/portrait.spec.ts`                        |
+| Тесты разбора и сохранения выдачи       | `tests/serp.spec.ts`, `tests/collector.spec.ts` |

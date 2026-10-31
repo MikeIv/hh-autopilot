@@ -16,11 +16,15 @@
     "lint:all": "eslint . && pnpm format:check",
     "typecheck": "nuxt typecheck",
     "test": "vitest run",
-    "verify": "pnpm lint:all && pnpm typecheck && pnpm test"
+    "verify": "pnpm lint:all && pnpm typecheck && pnpm test",
+    "hh:collect": "tsx scripts/collect.ts",
+    "hh:fixture": "tsx scripts/capture-serp.ts"
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
+    "htmlparser2": "^8.0.2",
     "nuxt": "^4.6.3",
+    "playwright": "^1.64.1",
     "vue": "^3.5.41",
     "vue-router": "^5.2.0",
     "yaml": "^2.9.1",
