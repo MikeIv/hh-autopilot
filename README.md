@@ -40,12 +40,24 @@ pnpm verify   # eslint + prettier + typecheck + tests
 pnpm build    # сборка Nitro
 ```
 
+## Портрет кандидата
+
+Портрет — подмножество `../resume-site/data/resume.yaml`: роль и опыт, навыки,
+зарплата, форматы, `hh.portrait` и `hh.keywords`. Источник правды один — файл
+резюме; в проекте живут только zod-схема нужных блоков и загрузчик, копии данных
+нет. Путь по умолчанию — соседний пакет, `RESUME_PATH` в `.env` перекрывает его.
+
 ## Что где
 
-| Что                             | Путь                                         |
-| ------------------------------- | -------------------------------------------- |
-| Схема базы и миграции           | `prisma/schema.prisma`, `prisma/migrations/` |
-| Статусы и union-типы            | `shared/types/domain.ts`                     |
-| Клиент Prisma                   | `server/utils/db.ts`                         |
-| Проверка связки «сервер → база» | `server/api/health.get.ts`                   |
-| Тесты схемы                     | `tests/db.spec.ts`                           |
+| Что                                     | Путь                                         |
+| --------------------------------------- | -------------------------------------------- |
+| Схема базы и миграции                   | `prisma/schema.prisma`, `prisma/migrations/` |
+| Статусы и union-типы                    | `shared/types/domain.ts`                     |
+| Схема портрета из `resume.yaml`         | `shared/schema/portrait.ts`                  |
+| Контракт портрета (`CandidatePortrait`) | `shared/types/portrait.ts`                   |
+| Разбор YAML в портрет                   | `shared/utils/portrait.ts`                   |
+| Загрузка портрета с путём из env        | `server/utils/portrait.ts` (`loadPortrait`)  |
+| Клиент Prisma                           | `server/utils/db.ts`                         |
+| Проверка связки «сервер → база»         | `server/api/health.get.ts`                   |
+| Тесты схемы                             | `tests/db.spec.ts`                           |
+| Тесты портрета                          | `tests/portrait.spec.ts`                     |
