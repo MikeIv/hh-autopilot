@@ -138,9 +138,38 @@ export function candidateExperienceYears(portrait: CandidatePortrait, now = new 
   return Math.max(0, now.getFullYear() - experienceStartYear(portrait))
 }
 
+/** Совпавшие технологии портрета в тексте вакансии: список для объяснения и для письма. */
+/** Написание технологии для человека: без версии и пояснений, но с точками и регистром. */
+function techLabel(keyword: string): string {
+  return keyword
+    .replace(/\(.*?\)/g, ' ')
+    .replace(/@/g, '')
+    .replace(/\s+\d+(?:\.\d+)?\s*$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Совпавшие технологии портрета в написании ключевых навыков: для причин и писем. */
+export function matchedTech(portrait: CandidatePortrait, text: string): string[] {
+  const flat = flatText(text)
+  const seen = new Set<string>()
+  const labels: string[] = []
+
+  for (const keyword of portrait.hh.keywords) {
+    const term = normalizeTech(keyword)
+    if (!term || seen.has(term) || !mentions(flat, term)) {
+      continue
+    }
+    seen.add(term)
+    labels.push(techLabel(keyword))
+  }
+
+  return labels
+}
+
 /** Стек: сколько технологий портрета встретилось в вакансии; полный балл — с трёх. */
 function scoreStack(portrait: CandidatePortrait, text: string, weight: number): ScoreCriterion {
-  const matched = techTerms(portrait).filter((term) => mentions(text, term))
+  const matched = matchedTech(portrait, text)
   const earned = Math.round(
     (weight * Math.min(matched.length, STACK_MATCHES_FOR_FULL)) / STACK_MATCHES_FOR_FULL,
   )

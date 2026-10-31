@@ -19,6 +19,7 @@
     "verify": "pnpm lint:all && pnpm typecheck && pnpm test",
     "hh:collect": "tsx scripts/collect.ts",
     "hh:score": "tsx scripts/score.ts",
+    "hh:letters": "tsx scripts/letters.ts",
     "hh:fixture": "tsx scripts/capture-serp.ts"
   },
   "dependencies": {

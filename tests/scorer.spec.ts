@@ -66,7 +66,7 @@ describe('скоринг вакансии', () => {
     const portrait = await loadPortrait()
     const result = scoreVacancy(portrait, IDEAL)
 
-    expect(criterion(result, 'stack')?.reason).toContain('nuxt')
+    expect(criterion(result, 'stack')?.reason).toContain('Nuxt')
     expect(criterion(result, 'role')?.reason).toContain('профилем')
     expect(criterion(result, 'role')?.reason).toContain('(fullstack)')
     expect(criterion(result, 'format')?.reason).toContain('remote')

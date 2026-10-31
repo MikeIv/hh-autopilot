@@ -27,6 +27,8 @@ export const portraitBasicsSchema = z.object({
   location: portraitLocationSchema,
   formats: z.array(workFormatSchema).min(1),
   salary: portraitSalarySchema,
+  /** Короткий тезис о себе: из него берётся абзац письма. */
+  headline: nonEmpty.optional(),
 })
 
 export const portraitExperienceSchema = z.object({
