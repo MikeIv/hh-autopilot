@@ -13,8 +13,8 @@ datasource db {
 
 /// Вакансия из выдачи hh. Одна строка на hh_id — дедупликация на уровне схемы.
 model Vacancy {
-  id          String   @id @default(cuid())
-  hhId        String   @unique
+  id          String    @id @default(cuid())
+  hhId        String    @unique
   title       String
   company     String
   url         String
@@ -32,8 +32,8 @@ model Vacancy {
   source      String
   /// Отпечаток карточки: по нему видно, что работодатель правил вакансию.
   rawHash     String?
-  collectedAt DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  collectedAt DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   score       Score?
   letter      Letter?
@@ -58,15 +58,17 @@ model Score {
 
 /// Письмо под конкретную вакансию: вариант, текст и длина в символах поля hh.
 model Letter {
-  id        String   @id @default(cuid())
-  vacancyId String   @unique
-  vacancy   Vacancy  @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  id         String    @id @default(cuid())
+  vacancyId  String    @unique
+  vacancy    Vacancy   @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
   /// Вариант шаблона: product | outstaff | service
-  variant   String
-  body      String
-  charCount Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  variant    String
+  body       String
+  charCount  Int
+  /// Когда человек выбрал вариант вручную: повторная генерация его не перетирает.
+  selectedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   application Application?
 }

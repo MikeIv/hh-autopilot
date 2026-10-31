@@ -1,8 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { openTempDatabase } from './temp-db'
-import { QueueError, readQueue, submitDecision } from '../server/services/queue'
+import {
+  QueueError,
+  chooseLetterVariant,
+  readQueue,
+  submitDecision,
+} from '../server/services/queue'
+import { generateLetters } from '../server/services/letter'
 import { DAILY_APPLICATION_LIMIT } from '../shared/types/queue'
+import type { LetterVariant } from '../shared/types/domain'
 import { formatSalaryText } from '../shared/utils/queue'
 
 /** Поля карточки вакансии, которых нет в скоринге, но нужны очереди. */
@@ -124,5 +131,120 @@ describe('зарплата в карточке', () => {
     expect(plain(formatSalaryText(null, 300000, 'USD'))).toBe('до 300 000 $')
     expect(plain(formatSalaryText(5000, 5000, 'EUR'))).toBe('5 000 €')
     expect(formatSalaryText(null, null, 'RUR')).toBeNull()
+  })
+})
+
+describe('вариант письма в очереди', () => {
+  let prisma: PrismaClient
+  let close: () => Promise<void>
+  let vacancyId: string
+  let sentVacancyId: string
+
+  beforeAll(async () => {
+    const db = await openTempDatabase('queue-letter')
+    prisma = db.client
+    close = db.close
+
+    const vacancy = await prisma.vacancy.create({
+      data: {
+        hhId: '510000001',
+        title: 'Senior Fullstack (Nuxt)',
+        company: 'Платформа',
+        url: 'https://hh.ru/vacancy/510000001',
+        source: 'тест',
+      },
+    })
+    await prisma.score.create({
+      data: { vacancyId: vacancy.id, total: 90, threshold: 65, passed: true, criteria: '[]' },
+    })
+    vacancyId = vacancy.id
+
+    const sent = await prisma.vacancy.create({
+      data: {
+        hhId: '510000002',
+        title: 'Fullstack в аутстафф',
+        company: 'Подрядчик',
+        url: 'https://hh.ru/vacancy/510000002',
+        source: 'тест',
+      },
+    })
+    await prisma.score.create({
+      data: { vacancyId: sent.id, total: 80, threshold: 65, passed: true, criteria: '[]' },
+    })
+    sentVacancyId = sent.id
+
+    await generateLetters(prisma)
+
+    const sentLetter = await prisma.letter.findUniqueOrThrow({ where: { vacancyId: sent.id } })
+    await prisma.application.create({
+      data: {
+        vacancyId: sent.id,
+        letterId: sentLetter.id,
+        status: 'sent',
+        approvedAt: new Date(),
+        sentAt: new Date(),
+      },
+    })
+  })
+
+  afterAll(async () => {
+    await close()
+  })
+
+  it('сохраняет выбор человека, и генерация его не перетирает', async () => {
+    const draft = await chooseLetterVariant(vacancyId, 'outstaff', prisma)
+
+    expect(draft.variant).toBe('outstaff')
+
+    const saved = await prisma.letter.findUniqueOrThrow({ where: { vacancyId } })
+    expect(saved.variant).toBe('outstaff')
+    expect(saved.body).toBe(draft.body)
+    expect(saved.selectedAt).toBeInstanceOf(Date)
+
+    const stats = await generateLetters(prisma)
+    expect(stats.kept).toBe(1)
+    expect(stats.generated).toBe(1)
+
+    const kept = await prisma.letter.findUniqueOrThrow({ where: { vacancyId } })
+    expect(kept.variant).toBe('outstaff')
+    expect(kept.body).toBe(draft.body)
+  })
+
+  it('не принимает неизвестный вариант письма', async () => {
+    await expect(
+      chooseLetterVariant(vacancyId, 'weird' as unknown as LetterVariant, prisma),
+    ).rejects.toBeInstanceOf(QueueError)
+  })
+
+  it('не даёт менять вариант после отправки', async () => {
+    await expect(chooseLetterVariant(sentVacancyId, 'service', prisma)).rejects.toThrow(
+      'уже отправлен',
+    )
+  })
+
+  it('одобрение связывает письмо с откликом, отправленный отклик не решается повторно', async () => {
+    const status = await submitDecision(vacancyId, 'approve', prisma)
+    expect(status).toBe('approved')
+
+    const application = await prisma.application.findUniqueOrThrow({ where: { vacancyId } })
+    const letter = await prisma.letter.findUniqueOrThrow({ where: { vacancyId } })
+    expect(application.letterId).toBe(letter.id)
+
+    await expect(submitDecision(sentVacancyId, 'approve', prisma)).rejects.toThrow('уже отправлен')
+  })
+
+  it('отдаёт все три варианта письма и выбранный', async () => {
+    const queue = await readQueue(prisma)
+    const item = queue.items.find((row) => row.vacancyId === vacancyId)
+
+    expect(item?.letter?.variants.map((draft) => draft.variant)).toEqual([
+      'product',
+      'outstaff',
+      'service',
+    ])
+    expect(item?.letter?.variant).toBe('outstaff')
+    expect(item?.letter?.chosen).toBe(true)
+    expect(item?.letter?.variants.find((draft) => draft.recommended)?.variant).toBe('product')
+    expect(item?.status).toBe('approved')
   })
 })
