@@ -22,6 +22,7 @@ import {
   startOfMskDay,
 } from '../../shared/utils/apply'
 import { sendApplication } from './hh-apply'
+import { isRefreshRunning } from './refresh'
 
 /** Ключ настройки-стопа: panic живёт в базе, чтобы CLI и сервер видели один флаг. */
 export const PANIC_SETTING_KEY = 'apply.panic'
@@ -174,6 +175,10 @@ export async function assertReadyToSend(
     )
   }
 
+  if (isRefreshRunning()) {
+    throw new ApplyError(409, 'Сейчас обновляется выдача hh — дождитесь окончания')
+  }
+
   const active = await findActiveRun(client, now)
   if (active) {
     throw new ApplyError(409, 'Прогон уже идёт — дождитесь завершения или нажмите «Стоп»')
@@ -322,6 +327,10 @@ export async function runApply(options: ApplyOptions = {}): Promise<ApplyResult>
   const startedAt = now.toISOString()
 
   if (mode === 'live') {
+    if (isRefreshRunning()) {
+      throw new ApplyError(409, 'Сейчас обновляется выдача hh — дождитесь окончания')
+    }
+
     const active = await findActiveRun(client, now)
     if (active) {
       throw new ApplyError(409, 'Прогон уже идёт — дождитесь завершения или нажмите «Стоп»')

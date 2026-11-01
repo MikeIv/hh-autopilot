@@ -152,7 +152,11 @@ pnpm dev   # http://127.0.0.1:3000
 оценки. Кнопки «Одобрить /
 Отклонить» пишут статус в `Application`, «Отправить сейчас» отправляет одну
 одобренную карточку. Дневной лимит — 20 откликов, он же верхняя граница счётчиков.
-API: `GET /api/queue`, `POST /api/queue/decision`, `POST /api/queue/letter`.
+Кнопка «Обновить с hh» заново читает выдачу, пересчитывает оценки и письма и
+обновляет список. Пока идёт отправка откликов, кнопка ждёт: браузер hh один.
+Капча или истёкший вход останавливают обновление и просят `pnpm hh:login`.
+API: `GET /api/queue`, `POST /api/queue/decision`, `POST /api/queue/letter`,
+`GET /api/refresh`, `POST /api/refresh`.
 
 ## Отправка откликов
 
@@ -245,6 +249,8 @@ CI (`.github/workflows/ci.yml`) гоняет `pnpm verify` и `pnpm build` на 
 | Отправка через UI hh (Playwright)       | `server/services/hh-apply.ts`                         |
 | API отправки, panic и ручной отправки   | `server/api/apply/`                                   |
 | Панель прогона на клиенте               | `app/composables/useApply.ts`                         |
+| Обновление выдачи hh из очереди         | `server/services/refresh.ts`, `server/api/refresh/`   |
+| Кнопка обновления                       | `app/composables/useRefresh.ts`                       |
 | CLI сбора                               | `scripts/collect.ts`, `scripts/capture-serp.ts`       |
 | CLI скоринга и писем                    | `scripts/score.ts`, `scripts/letters.ts`              |
 | CLI отправки и съёмки формы             | `scripts/apply.ts`, `scripts/capture-apply.ts`        |
@@ -257,6 +263,7 @@ CI (`.github/workflows/ci.yml`) гоняет `pnpm verify` и `pnpm build` на 
 | Тесты скоринга                          | `tests/scorer.spec.ts`, `tests/score-store.spec.ts`   |
 | Тесты писем                             | `tests/letter.spec.ts`                                |
 | Тесты очереди и решений                 | `tests/queue.spec.ts`                                 |
+| Тесты обновления выдачи                 | `tests/refresh.spec.ts`                               |
 | Тесты отправки и предохранителей        | `tests/apply.spec.ts`                                 |
 | Подготовка тестового окружения          | `tests/setup.ts`, `vitest.config.ts`                  |
 

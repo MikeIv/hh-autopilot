@@ -21,6 +21,7 @@ const {
   panic,
   releasePanic,
 } = useApply()
+const { refreshing, refreshError, refreshNote, refreshFromHh } = useRefresh()
 
 useHead({ title: 'Очередь ревью — hh-autopilot' })
 
@@ -57,6 +58,19 @@ const panicAt = computed(() => applyStatus.value?.panicAt ?? null)
           Одобренные отклики уходят на hh через браузер: окно 10:00–19:00 МСК, лимит 20 в день,
           капча — остановка. Авто-отправка включается только переменной HH_AUTO_APPLY.
         </p>
+        <button
+          type="button"
+          :class="[$style.button, $style.dry]"
+          :disabled="refreshing || applyActive"
+          @click="refreshFromHh"
+        >
+          {{ refreshing ? 'Обновляю выдачу…' : 'Обновить с hh' }}
+        </button>
+        <p v-if="refreshing" :class="$style.note">
+          Читаю поиск hh и пересчитываю оценки. Обычно это около минуты.
+        </p>
+        <p v-if="refreshError" :class="$style.error">{{ refreshError }}</p>
+        <p v-if="refreshNote" :class="$style.success">{{ refreshNote }}</p>
       </div>
 
       <dl :class="$style.counters">
@@ -116,7 +130,7 @@ const panicAt = computed(() => applyStatus.value?.panicAt ?? null)
         <button
           type="button"
           :class="[$style.button, $style.send]"
-          :disabled="starting || applyActive || !applyStatus?.autoApplyEnabled"
+          :disabled="starting || applyActive || refreshing || !applyStatus?.autoApplyEnabled"
           @click="start(false)"
         >
           Запустить прогон
