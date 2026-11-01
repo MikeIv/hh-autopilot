@@ -361,8 +361,32 @@ const lastRunLabel = computed(() => {
   font-weight: 600;
 }
 
+/*
+ * Общий набор токенов тёмной поверхности — шапка и панель отправки. Вложенные
+ * элементы (пилюли, кнопки, дропдауны, плашки) читают цвета отсюда, поэтому
+ * тёмные блоки не расходятся по оформлению.
+ */
+.shellSurface {
+  color: var(--header-ink);
+  --surface: rgb(255 255 255 / 8%);
+  --surface-muted: rgb(255 255 255 / 12%);
+  --text: var(--header-ink);
+  --text-muted: var(--header-muted);
+  --line: rgb(255 255 255 / 16%);
+  --line-strong: rgb(255 255 255 / 30%);
+  --action-bg: var(--accent-bright);
+  --action-text: var(--accent-ink);
+  --action-hover-bg: color-mix(in srgb, var(--accent-bright) 84%, white);
+  --success: var(--accent-bright);
+  --success-bg: rgb(255 255 255 / 12%);
+  --danger: #ffb0aa;
+  --danger-bg: rgb(255 120 120 / 16%);
+}
+
 /* Шапка всегда тёмная: цветовой якорь страницы, отделённый от ленты карточек. */
 .topbar {
+  composes: shellSurface;
+
   position: sticky;
   top: 0;
   z-index: 3;
@@ -376,15 +400,10 @@ const lastRunLabel = computed(() => {
   padding: var(--space-2) 20px;
   border-bottom: 1px solid var(--header-line);
   background: var(--shell-bg);
-  color: var(--header-ink);
   /* Акцентная полоса по низу шапки: цветовой стык с лентой карточек. */
   box-shadow:
     inset 0 -2px 0 var(--accent),
     0 16px 36px -30px rgb(10 17 24 / 95%);
-  /* На тёмной поверхности главная кнопка — яркий акцент, а не чернила. */
-  --action-bg: var(--accent-bright);
-  --action-text: var(--accent-ink);
-  --action-hover-bg: color-mix(in srgb, var(--accent-bright) 84%, white);
 }
 
 .brand {
@@ -583,10 +602,11 @@ const lastRunLabel = computed(() => {
 
 /*
  * Панель отправки — тёмный «остров» в языке шапки: так блок управления не читается
- * как ещё одна карточка вакансии. Вложенные элементы берут цвета через локальные
- * переменные, поэтому пилюли, дропдауны и кнопки остаются согласованными.
+ * как ещё одна карточка вакансии. Токены поверхности берутся из `shellSurface`.
  */
 .apply {
+  composes: shellSurface;
+
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -596,21 +616,7 @@ const lastRunLabel = computed(() => {
   border-top: 2px solid var(--accent);
   border-radius: 0 0 var(--radius-card) var(--radius-card);
   background: var(--shell-bg);
-  color: var(--header-ink);
   box-shadow: var(--shadow-card);
-  --surface: rgb(255 255 255 / 8%);
-  --surface-muted: rgb(255 255 255 / 12%);
-  --text: var(--header-ink);
-  --text-muted: var(--header-muted);
-  --line: rgb(255 255 255 / 16%);
-  --line-strong: rgb(255 255 255 / 30%);
-  --action-bg: var(--accent-bright);
-  --action-text: var(--accent-ink);
-  --action-hover-bg: color-mix(in srgb, var(--accent-bright) 84%, white);
-  --success: var(--accent-bright);
-  --success-bg: rgb(255 255 255 / 12%);
-  --danger: #ffb0aa;
-  --danger-bg: rgb(255 120 120 / 16%);
 }
 
 .applyTitle {
