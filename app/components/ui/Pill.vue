@@ -57,7 +57,7 @@ withDefaults(
 }
 
 .accent {
-  background: var(--beige);
-  color: var(--ink);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
 }
 </style>

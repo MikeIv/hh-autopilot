@@ -236,7 +236,7 @@ const sentAtText = computed(() => {
     box-shadow 0.2s ease;
 
   &:hover {
-    border-color: var(--line-strong);
+    border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
     box-shadow: var(--shadow-card);
   }
 
@@ -424,7 +424,7 @@ const sentAtText = computed(() => {
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid var(--focus);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 
@@ -436,8 +436,8 @@ const sentAtText = computed(() => {
 
 .variantActive {
   border-color: transparent;
-  background: var(--beige);
-  color: var(--ink);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
   font-weight: 600;
 }
 

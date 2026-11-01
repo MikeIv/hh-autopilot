@@ -1,28 +1,39 @@
-/* Тёплая палитра по мотивам SC Shelkovskiy: беж, чернила, мягкие поверхности. */
+/*
+ * Палитра и шкалы. Цвета взяты у соседнего resume-site: холодный сине-серый фон,
+ * чернильный текст и зелёный акцент. Шапка всегда тёмная — она отделяет состояние
+ * дня от ленты карточек и работает как единственный «тёмный» якорь страницы.
+ */
 
 :root {
   color-scheme: light;
-  --bg: #fbfaf9;
+  --bg: #f5f7fa;
   --surface: #ffffff;
-  --surface-muted: #f3f2ed;
-  --text: #010101;
-  --text-muted: #5f5a52;
-  --beige: #d3c59f;
-  --ink: #010101;
-  --line: #e6e1d6;
-  --line-strong: #d8d2c4;
-  --action-bg: #010101;
+  --surface-muted: #eef1f6;
+  --text: #0f151c;
+  --text-muted: #545e6b;
+  --line: #dde2ea;
+  --line-strong: #c7d0dd;
+  --accent: #067a52;
+  --accent-strong: #045c3e;
+  --accent-bright: #35d39a;
+  --accent-soft: #ddf6ea;
+  --on-accent: #ffffff;
+  --action-bg: #0f151c;
   --action-text: #ffffff;
-  --success: #0d7a45;
-  --success-bg: #e7f6ee;
+  --success: #067a52;
+  --success-bg: #ddf6ea;
   --danger: #b4232a;
   --danger-bg: #fdecec;
-  --focus: #010101;
-  --shadow-card: 0 1px 0 rgb(1 1 1 / 4%), 0 18px 40px -32px rgb(1 1 1 / 45%);
-  --shadow-pop: 0 14px 36px -16px rgb(1 1 1 / 32%);
+  --header-bg: #0a1118;
+  --header-ink: #e7edf4;
+  --header-muted: #9fb0c2;
+  --header-line: rgb(255 255 255 / 12%);
+  --header-track: rgb(255 255 255 / 16%);
+  --shadow-card: 0 1px 2px rgb(15 21 28 / 6%), 0 12px 32px rgb(15 21 28 / 7%);
+  --shadow-pop: 0 18px 40px -18px rgb(15 21 28 / 34%);
   --radius-card: 24px;
   --radius-control: 16px;
-  --radius-sm: 12px;
+  --radius-sm: 10px;
   --radius-pill: 999px;
   --space-1: 8px;
   --space-2: 16px;
@@ -34,22 +45,25 @@
 
 html[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #161412;
-  --surface: #221f1b;
-  --surface-muted: #2c2823;
-  --text: #f3f2ed;
-  --text-muted: #b7b0a4;
-  --beige: #d3c59f;
-  --ink: #010101;
-  --line: #3a342c;
-  --line-strong: #4a4338;
-  --action-bg: #d3c59f;
-  --action-text: #010101;
-  --success: #7ddeaf;
-  --success-bg: #1c3328;
-  --danger: #ffb1ab;
-  --danger-bg: #3a2220;
-  --focus: #f3f2ed;
-  --shadow-card: 0 1px 0 rgb(0 0 0 / 35%), 0 18px 40px -32px rgb(0 0 0 / 80%);
-  --shadow-pop: 0 14px 36px -16px rgb(0 0 0 / 70%);
+  --bg: #0a1118;
+  --surface: #121b24;
+  --surface-muted: #1b2836;
+  --text: #e7edf4;
+  --text-muted: #9fb0c2;
+  --line: #26323f;
+  --line-strong: #35455a;
+  --accent: #23c98d;
+  --accent-strong: #6ee7bd;
+  --accent-bright: #6ee7bd;
+  --accent-soft: #14352a;
+  --on-accent: #05130d;
+  --action-bg: #e7edf4;
+  --action-text: #0a1118;
+  --success: #35d39a;
+  --success-bg: #14352a;
+  --danger: #ff9b95;
+  --danger-bg: #3a1f22;
+  --header-bg: #16222e;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 40%), 0 12px 32px rgb(0 0 0 / 30%);
+  --shadow-pop: 0 18px 40px -18px rgb(0 0 0 / 70%);
 }

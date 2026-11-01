@@ -47,19 +47,20 @@ function isDeciding(item: QueueItem): boolean {
 <style module lang="scss">
 .list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  /* Широкие карточки читаются лучше узких: одна-две колонки, без пустой третьей. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
   gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.list li {
+.list > li {
   display: flex;
   min-width: 0;
 }
 
-.list li > * {
+.list > li > * {
   flex: 1;
 }
 </style>

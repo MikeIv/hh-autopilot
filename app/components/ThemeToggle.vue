@@ -42,19 +42,23 @@ const { theme, toggle } = useTheme()
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid var(--focus);
+    outline: 2px solid var(--accent-bright);
     outline-offset: 2px;
   }
 }
 
+/*
+ * Свитчер живёт в тёмной шапке, но может стоять и на светлой поверхности,
+ * поэтому цвета берутся из `--switch-*` с обычными токенами как запасными.
+ */
 .track {
   position: relative;
   display: block;
   width: 56px;
   height: 30px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--switch-line, var(--line));
   border-radius: var(--radius-pill);
-  background: var(--surface-muted);
+  background: var(--switch-track, var(--surface-muted));
 }
 
 .thumb {
@@ -64,7 +68,7 @@ const { theme, toggle } = useTheme()
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--surface);
+  background: var(--switch-thumb, var(--surface));
   box-shadow: 0 1px 2px rgb(1 1 1 / 18%);
   transition: transform 0.2s ease;
 }
@@ -78,7 +82,7 @@ const { theme, toggle } = useTheme()
   justify-content: center;
   width: 14px;
   height: 14px;
-  color: var(--text-muted);
+  color: var(--switch-icon, var(--text-muted));
   transform: translateY(-50%);
   transition: color 0.2s ease;
 
@@ -102,12 +106,12 @@ const { theme, toggle } = useTheme()
 
 .root[aria-checked='true'] .sun,
 .root[aria-checked='false'] .moon {
-  color: var(--text-muted);
+  color: var(--switch-icon, var(--text-muted));
 }
 
 .root[aria-checked='true'] .moon,
 .root[aria-checked='false'] .sun {
-  color: var(--text);
+  color: var(--switch-icon-active, var(--text));
 }
 
 @media (prefers-reduced-motion: reduce) {

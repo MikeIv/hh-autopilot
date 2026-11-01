@@ -37,7 +37,7 @@ withDefaults(
   margin: 0;
   border: 0;
   border-radius: 50%;
-  background: conic-gradient(from 0deg, var(--beige), transparent 72%);
+  background: conic-gradient(from 0deg, var(--accent), transparent 72%);
   appearance: none;
   overflow: hidden;
   animation: spin 0.9s linear infinite;

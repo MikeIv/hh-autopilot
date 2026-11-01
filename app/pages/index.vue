@@ -25,9 +25,9 @@ const {
   panic,
   releasePanic,
 } = useApply()
-const { refreshing, refreshError, refreshNote, refreshFromHh } = useRefresh()
+const { refreshing, lastRefreshAt, refreshError, refreshNote, refreshFromHh } = useRefresh()
 
-useHead({ title: 'Очередь ревью — hh-autopilot' })
+useHead({ title: 'Актуальные вакансии — hh-autopilot' })
 
 const RUN_STATUS_LABELS: Record<RunStatus, string> = {
   running: 'идёт',
@@ -59,6 +59,22 @@ const decided = computed(() =>
 const panicAt = computed(() => applyStatus.value?.panicAt ?? null)
 const lastRun = computed(() => applyStatus.value?.lastRun ?? null)
 
+/** Подпись у кнопки обновления: когда выдача читалась с hh в последний раз. */
+const lastRefreshText = computed(() => {
+  const at = lastRefreshAt.value
+  if (!at) {
+    return 'ещё не обновляли'
+  }
+
+  const date = new Date(at)
+  const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  if (date.toDateString() === new Date().toDateString()) {
+    return `обновлено в ${time}`
+  }
+  const day = date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })
+  return `обновлено ${day}, ${time}`
+})
+
 /** Подпись дропдауна последнего прогона: статус и время окончания. */
 const lastRunLabel = computed(() => {
   const run = lastRun.value
@@ -86,10 +102,13 @@ const lastRunLabel = computed(() => {
     <div :class="$style.content" :inert="refreshing || undefined">
       <header :class="$style.topbar">
         <div :class="$style.brand">
-          <h1 :class="$style.title">Очередь ревью</h1>
-          <p :class="$style.subtitle">
-            Сначала Nuxt, затем Vue и Nitro · окно 10:00–19:00 МСК · до 20 откликов в день
-          </p>
+          <span :class="$style.mark" aria-hidden="true">hh</span>
+          <div :class="$style.brandText">
+            <h1 :class="$style.title">Актуальные вакансии</h1>
+            <p :class="$style.subtitle">
+              Сначала Nuxt, затем Vue и Nitro · окно 10:00–19:00 МСК · до 20 откликов в день
+            </p>
+          </div>
         </div>
 
         <div :class="$style.topbarSide">
@@ -127,13 +146,16 @@ const lastRunLabel = computed(() => {
           </dl>
 
           <div :class="$style.topbarActions">
-            <UiButton
-              variant="secondary"
-              :disabled="refreshing || applyActive"
-              @click="refreshFromHh"
-            >
-              {{ refreshing ? 'Обновляю выдачу…' : 'Обновить с hh' }}
-            </UiButton>
+            <div :class="$style.refresh">
+              <UiButton
+                variant="accent"
+                :disabled="refreshing || applyActive"
+                @click="refreshFromHh"
+              >
+                {{ refreshing ? 'Обновляю выдачу…' : 'Обновить с hh' }}
+              </UiButton>
+              <span :class="$style.refreshTime">{{ lastRefreshText }}</span>
+            </div>
             <ClientOnly>
               <ThemeToggle />
               <template #fallback>
@@ -303,7 +325,7 @@ const lastRunLabel = computed(() => {
 .page {
   max-width: 88rem;
   margin: 0 auto;
-  padding: var(--space-2) 20px 64px;
+  padding: 0 20px 64px;
   color: var(--text);
 }
 
@@ -343,33 +365,66 @@ const lastRunLabel = computed(() => {
   font-weight: 600;
 }
 
+/* Шапка всегда тёмная: цветовой якорь страницы, отделённый от ленты карточек. */
 .topbar {
   position: sticky;
   top: 0;
   z-index: 3;
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
   /* Шапка тянется на всю ширину страницы, включая её боковые отступы. */
   margin: 0 -20px;
   padding: var(--space-2) 20px;
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--header-line);
+  background:
+    radial-gradient(
+      46rem 14rem at 4% -70%,
+      color-mix(in srgb, var(--accent) 32%, transparent),
+      transparent 68%
+    ),
+    var(--header-bg);
+  color: var(--header-ink);
+  /* Акцентная полоса по низу шапки: цветовой стык с лентой карточек. */
+  box-shadow:
+    inset 0 -2px 0 var(--accent),
+    0 16px 36px -30px rgb(10 17 24 / 95%);
 }
 
 .brand {
   display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  min-width: 0;
+}
+
+.mark {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.brandText {
+  display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
 }
 
 .title {
   margin: 0;
-  font-size: 1.75rem;
+  color: var(--header-ink);
+  font-size: 1.5rem;
   font-weight: 700;
   line-height: 1.15;
 }
@@ -377,15 +432,15 @@ const lastRunLabel = computed(() => {
 .subtitle {
   margin: 0;
   max-width: 38rem;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  color: var(--header-muted);
+  font-size: 0.85rem;
 }
 
 .topbarSide {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
-  align-items: flex-end;
+  align-items: center;
   justify-content: flex-end;
 }
 
@@ -401,7 +456,7 @@ const lastRunLabel = computed(() => {
 }
 
 .meterLabel {
-  color: var(--text-muted);
+  color: var(--header-muted);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -410,7 +465,7 @@ const lastRunLabel = computed(() => {
 
 .meterValue {
   margin: 2px 0 0;
-  color: var(--text);
+  color: var(--header-ink);
   font-size: 1.35rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -418,7 +473,7 @@ const lastRunLabel = computed(() => {
 }
 
 .meterTotal {
-  color: var(--text-muted);
+  color: var(--header-muted);
   font-size: 0.95rem;
   font-weight: 500;
 }
@@ -430,30 +485,48 @@ const lastRunLabel = computed(() => {
   margin-top: 6px;
   border: 0;
   border-radius: var(--radius-pill);
-  background: var(--surface-muted);
+  background: var(--header-track);
   appearance: none;
   overflow: hidden;
 
   &::-webkit-progress-bar {
     border-radius: var(--radius-pill);
-    background: var(--surface-muted);
+    background: var(--header-track);
   }
 
   &::-webkit-progress-value {
     border-radius: var(--radius-pill);
-    background: var(--success);
+    background: var(--accent-bright);
   }
 
   &::-moz-progress-bar {
     border-radius: var(--radius-pill);
-    background: var(--success);
+    background: var(--accent-bright);
   }
 }
 
 .topbarActions {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--space-2);
   align-items: center;
+  /* Шапка тёмная в обеих темах: свитчеру задаются её собственные цвета. */
+  --switch-track: rgb(255 255 255 / 14%);
+  --switch-line: rgb(255 255 255 / 20%);
+  --switch-thumb: #f3f6fa;
+  --switch-icon: rgb(231 237 244 / 70%);
+  --switch-icon-active: #0a1118;
+}
+
+.refresh {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.refreshTime {
+  color: var(--header-muted);
+  font-size: 0.75rem;
+  text-align: center;
 }
 
 /* Заглушка свитчера до гидратации: шапка не дёргается по ширине. */
@@ -505,8 +578,12 @@ const lastRunLabel = computed(() => {
     position: static;
   }
 
+  .topbarSide {
+    justify-content: flex-start;
+  }
+
   .title {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
   }
 }
 

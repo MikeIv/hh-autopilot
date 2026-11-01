@@ -16,6 +16,8 @@ export function useRefresh() {
   let seenFinishedAt: string | null = null
 
   const refreshing = computed(() => starting.value || Boolean(status.data.value?.running))
+  /** Когда выдача последний раз обновилась успешно — для подписи у кнопки. */
+  const lastRefreshAt = computed(() => status.data.value?.finishedAt ?? null)
 
   function stopPolling(): void {
     if (timer !== null) {
@@ -100,5 +102,5 @@ export function useRefresh() {
 
   onBeforeUnmount(stopPolling)
 
-  return { refreshing, refreshError, refreshNote, refreshFromHh }
+  return { refreshing, lastRefreshAt, refreshError, refreshNote, refreshFromHh }
 }

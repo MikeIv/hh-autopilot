@@ -1,5 +1,5 @@
 <script setup lang="ts">
-export type UiButtonVariant = 'primary' | 'secondary' | 'danger'
+export type UiButtonVariant = 'primary' | 'accent' | 'secondary' | 'danger'
 
 withDefaults(
   defineProps<{
@@ -39,10 +39,11 @@ withDefaults(
   appearance: none;
   transition:
     background-color 0.2s ease,
-    color 0.2s ease;
+    color 0.2s ease,
+    border-color 0.2s ease;
 
   &:focus-visible {
-    outline: 2px solid var(--text);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 
@@ -61,8 +62,25 @@ withDefaults(
   color: var(--action-text);
 }
 
+.accent {
+  background: var(--accent);
+  color: var(--on-accent);
+
+  &:hover:not(:disabled) {
+    background: var(--accent-strong);
+  }
+}
+
+/* Выключенная кнопка не должна спорить с активной: уходит на нейтральную заливку. */
+.primary:disabled,
+.accent:disabled {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  opacity: 1;
+}
+
 .secondary {
-  border-color: var(--line);
+  border-color: var(--line-strong);
   background: var(--surface);
   color: var(--text);
 }
