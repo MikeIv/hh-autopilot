@@ -35,6 +35,8 @@ export interface QueueItem {
   area: string | null
   salary: string | null
   score: ScoreResult
+  /** Совпадения стека Nuxt: Nuxt весит больше Vue и Nitro, по этому весу карточка выше. */
+  nuxtStack: string[]
   letter: QueueLetter | null
   status: ApplicationStatus
   approvedAt: string | null

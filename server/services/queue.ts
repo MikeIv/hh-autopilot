@@ -9,6 +9,7 @@ import { LETTER_VARIANTS } from '../../shared/types/domain'
 import type { LetterDraft } from '../../shared/types/letter'
 import { buildLetter, detectVariant, letterVariants } from '../../shared/utils/letter'
 import { formatSalaryText } from '../../shared/utils/queue'
+import { compareNuxtStackFirst, nuxtStackLabels } from '../../shared/utils/scorer'
 import { startOfMskDay } from '../../shared/utils/apply'
 
 /** Ошибка очереди: обработчик API превращает её в статус ответа. */
@@ -77,6 +78,7 @@ export async function readQueue(client: PrismaClient = prisma): Promise<QueueRes
       description: vacancy.description,
     }
     const drafts = vacancy.letter ? letterVariants(portrait, vacancyForLetter) : []
+    const criteria = parseCriteria(score.criteria)
 
     return {
       vacancyId: vacancy.id,
@@ -90,8 +92,9 @@ export async function readQueue(client: PrismaClient = prisma): Promise<QueueRes
         total: score.total,
         threshold: score.threshold,
         passed: score.passed,
-        criteria: parseCriteria(score.criteria),
+        criteria,
       },
+      nuxtStack: nuxtStackLabels(criteria),
       letter: vacancy.letter
         ? buildQueueLetter(vacancy.letter, drafts, detectVariant(vacancyForLetter))
         : null,
@@ -101,6 +104,13 @@ export async function readQueue(client: PrismaClient = prisma): Promise<QueueRes
       error: vacancy.application?.error ?? null,
     }
   })
+
+  items.sort((left, right) =>
+    compareNuxtStackFirst(
+      { total: left.score.total, nuxtStack: left.nuxtStack },
+      { total: right.score.total, nuxtStack: right.nuxtStack },
+    ),
+  )
 
   return {
     threshold: scores[0]?.threshold ?? 0,

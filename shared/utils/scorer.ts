@@ -16,6 +16,21 @@ export const DEFAULT_SCORE_THRESHOLD = 65
 /** Полный балл за стек — три совпавшие технологии; одна-две — ещё не тот стек. */
 const STACK_MATCHES_FOR_FULL = 3
 
+/**
+ * Ядро стека Nuxt и вес в выдаче. Nuxt поднимает карточку сильнее, чем Vue или
+ * Nitro; TypeScript и Vite встречаются и в чужих стеках, поэтому порядок не двигают.
+ */
+const NUXT_STACK_LABELS: ReadonlyArray<readonly [string, string, number]> = [
+  ['nuxt', 'Nuxt', 10],
+  ['nuxt ui', 'Nuxt UI', 10],
+  ['nuxi', 'Nuxi', 10],
+  ['vue', 'Vue', 3],
+  ['nitro', 'Nitro', 3],
+  ['pinia', 'Pinia', 3],
+  ['vueuse', 'VueUse', 3],
+  ['vue router', 'Vue Router', 3],
+]
+
 /** Слова-маркеры роли: по ним видно, что вакансия про разработку, а не про что-то рядом. */
 const ROLE_WORDS = ['разработчик', 'developer', 'программист', 'инженер', 'engineer']
 
@@ -82,6 +97,67 @@ function normalizeTech(keyword: string): string {
 /** Технологии портрета: ключевые навыки hh, нормализованные и без повторов. */
 export function techTerms(portrait: CandidatePortrait): string[] {
   return [...new Set(portrait.hh.keywords.map(normalizeTech).filter((term) => term.length > 1))]
+}
+
+/** Вес технологии в выдаче: Nuxt и модули рядом — 10, Vue и Nitro — 3, остальное — 0. */
+function nuxtStackWeight(keyword: string): number {
+  const term = normalizeTech(keyword)
+  if (term.startsWith('nuxt ')) {
+    return 10
+  }
+
+  return NUXT_STACK_LABELS.find(([name]) => name === term)?.[2] ?? 0
+}
+
+/** Сумма весов уже отобранных совпадений: её считает сортировка, без повторного разбора текста. */
+function nuxtStackRank(labels: readonly string[]): number {
+  return labels.reduce((sum, label) => sum + nuxtStackWeight(label), 0)
+}
+
+/** Nuxt и соседние технологии — впереди, внутри группы тяжелее вес выше. */
+function orderByNuxtStack(labels: readonly string[]): string[] {
+  const nuxt: string[] = []
+  const rest: string[] = []
+
+  for (const label of labels) {
+    if (nuxtStackWeight(label) > 0) {
+      nuxt.push(label)
+    } else {
+      rest.push(label)
+    }
+  }
+
+  nuxt.sort((left, right) => nuxtStackWeight(right) - nuxtStackWeight(left))
+  return [...nuxt, ...rest]
+}
+
+/**
+ * Совпадения стека Nuxt в критерии «стек».
+ * Если список совпадений уже записан при скоринге — берём его.
+ * Старые оценки без списка читаем из текста причины. Заголовок «стека Nuxt»
+ * в причине — не совпадение, поэтому перед поиском он вырезается.
+ */
+export function nuxtStackLabels(criteria: readonly ScoreCriterion[]): string[] {
+  const stack = criteria.find((item) => item.key === 'stack')
+  if (!stack) {
+    return []
+  }
+
+  if (stack.matches) {
+    return orderByNuxtStack(stack.matches).filter((label) => nuxtStackWeight(label) > 0)
+  }
+
+  const flat = flatText(stack.reason).replaceAll('стека nuxt', '')
+  return NUXT_STACK_LABELS.filter(([term]) => mentions(flat, term)).map(([, label]) => label)
+}
+
+/** Сравнение выдачи: сильнее стек Nuxt — выше, при равенстве — выше оценка. */
+export function compareNuxtStackFirst(
+  left: { total: number; nuxtStack: readonly string[] },
+  right: { total: number; nuxtStack: readonly string[] },
+): number {
+  const byStack = nuxtStackRank(right.nuxtStack) - nuxtStackRank(left.nuxtStack)
+  return byStack !== 0 ? byStack : right.total - left.total
 }
 
 /** Встречается ли термин в тексте как отдельное слово, с учётом дефисов и пробелов. */
@@ -164,7 +240,13 @@ export function matchedTech(portrait: CandidatePortrait, text: string): string[]
     labels.push(techLabel(keyword))
   }
 
-  return labels
+  return orderByNuxtStack(labels)
+}
+
+/** «Nuxt, Vue и другие» — короткий список для причины, без обрезки посередине названия. */
+function listed(labels: readonly string[], limit: number): string {
+  const head = labels.slice(0, limit).join(', ')
+  return labels.length > limit ? `${head} и другие` : head
 }
 
 /** Стек: сколько технологий портрета встретилось в вакансии; полный балл — с трёх. */
@@ -173,15 +255,28 @@ function scoreStack(portrait: CandidatePortrait, text: string, weight: number): 
   const earned = Math.round(
     (weight * Math.min(matched.length, STACK_MATCHES_FOR_FULL)) / STACK_MATCHES_FOR_FULL,
   )
-  const shown = matched.slice(0, 5).join(', ')
+  const splitAt = matched.findIndex((label) => nuxtStackWeight(label) === 0)
+  const nuxt = splitAt === -1 ? matched : matched.slice(0, splitAt)
+  const rest = splitAt === -1 ? [] : matched.slice(splitAt)
+  const progress = `(${matched.length} из ${STACK_MATCHES_FOR_FULL} для полного балла)`
+
+  let reason = 'ни одна технология портрета в вакансии не встретилась'
+  if (nuxt.length && rest.length) {
+    const nuxtList = listed(nuxt, 5)
+    const restList = listed(rest, 3)
+    reason = `совпали технологии стека Nuxt: ${nuxtList}; ещё из портрета: ${restList} ${progress}`
+  } else if (nuxt.length) {
+    reason = `совпали технологии стека Nuxt: ${listed(nuxt, 5)} ${progress}`
+  } else if (rest.length) {
+    reason = `совпали технологии портрета, без стека Nuxt: ${listed(rest, 5)} ${progress}`
+  }
 
   return {
     key: 'stack',
     weight,
     earned,
-    reason: matched.length
-      ? `совпали технологии: ${shown}${matched.length > 5 ? ' и другие' : ''} (${matched.length} из ${STACK_MATCHES_FOR_FULL} для полного балла)`
-      : 'ни одна технология портрета в вакансии не встретилась',
+    reason,
+    matches: matched,
   }
 }
 

@@ -72,6 +72,9 @@ const sentAtText = computed(() => {
           <span v-if="item.area"> · {{ item.area }}</span>
           <span v-if="item.salary"> · {{ item.salary }}</span>
         </p>
+        <p v-if="item.nuxtStack.length" :class="$style.nuxt">
+          Стек Nuxt: {{ item.nuxtStack.join(', ') }}
+        </p>
         <p v-if="sentAtText" :class="$style.sentAt">Отправлено {{ sentAtText }}</p>
       </div>
       <div :class="$style.side">
@@ -194,6 +197,13 @@ const sentAtText = computed(() => {
   margin: 0;
   color: #5c6472;
   font-size: 0.9rem;
+}
+
+.nuxt {
+  margin: 0;
+  color: #1c6b3a;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .sentAt {

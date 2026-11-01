@@ -20,6 +20,7 @@ async function createVacancy(
   passed: boolean,
   total: number,
   extra: { salaryFrom?: number; salaryTo?: number; currency?: string; area?: string } = {},
+  stack: { reason?: string; matches?: string[] } = {},
 ) {
   const vacancy = await prisma.vacancy.create({
     data: {
@@ -39,7 +40,13 @@ async function createVacancy(
       threshold: 65,
       passed,
       criteria: JSON.stringify([
-        { key: 'stack', weight: 35, earned: total / 3, reason: 'совпали технологии: Nuxt' },
+        {
+          key: 'stack',
+          weight: 35,
+          earned: total / 3,
+          reason: stack.reason ?? 'совпали технологии: Nuxt',
+          ...(stack.matches ? { matches: stack.matches } : {}),
+        },
       ]),
     },
   })
@@ -93,6 +100,7 @@ describe('очередь ревью', () => {
     expect(first?.status).toBe('queued')
     expect(second?.letter).toBeNull()
     expect(first?.score.criteria[0]?.reason).toContain('Nuxt')
+    expect(first?.nuxtStack).toEqual(['Nuxt'])
   })
 
   it('одобряет и отклоняет, обновляя решение без дублей', async () => {
@@ -121,6 +129,64 @@ describe('очередь ревью', () => {
     expect(await prisma.application.count()).toBe(2)
 
     await expect(submitDecision(passed.id, 'reject', prisma)).resolves.toBe('rejected')
+  })
+})
+
+describe('порядок выдачи', () => {
+  let prisma: PrismaClient
+  let close: () => Promise<void>
+
+  beforeAll(async () => {
+    const db = await openTempDatabase('queue-order')
+    prisma = db.client
+    close = db.close
+
+    await createVacancy(
+      prisma,
+      '520000001',
+      'DevOps инженер',
+      true,
+      95,
+      {},
+      {
+        reason: 'совпали технологии портрета, без стека Nuxt: Git, Docker',
+        matches: ['Git', 'Docker', 'HTML'],
+      },
+    )
+    await createVacancy(
+      prisma,
+      '520000002',
+      'Vue разработчик',
+      true,
+      72,
+      {},
+      {
+        matches: ['Vue', 'TypeScript'],
+      },
+    )
+    await createVacancy(
+      prisma,
+      '520000003',
+      'Nuxt fullstack разработчик',
+      true,
+      68,
+      {},
+      {
+        matches: ['Nuxt', 'Vue', 'TypeScript', 'Nitro'],
+      },
+    )
+  })
+
+  afterAll(async () => {
+    await close()
+  })
+
+  it('ставит совпадения стека Nuxt выше более высокой оценки без Nuxt', async () => {
+    const queue = await readQueue(prisma)
+
+    expect(queue.items.map((item) => item.hhId)).toEqual(['520000003', '520000002', '520000001'])
+    expect(queue.items[0]?.nuxtStack).toEqual(['Nuxt', 'Vue', 'Nitro'])
+    expect(queue.items[2]?.nuxtStack).toEqual([])
   })
 })
 

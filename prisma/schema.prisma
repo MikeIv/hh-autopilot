@@ -51,7 +51,7 @@ model Score {
   total     Int
   threshold Int
   passed    Boolean
-  /// JSON: [{ key, weight, earned, reason }]
+  /// JSON: [{ key, weight, earned, reason, matches? }]
   criteria  String
   scoredAt  DateTime @default(now())
 }

@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   SCORING_WEIGHTS,
   candidateExperienceYears,
+  compareNuxtStackFirst,
+  matchedTech,
+  nuxtStackLabels,
   scoreVacancy,
   techTerms,
 } from '../shared/utils/scorer'
@@ -66,7 +69,8 @@ describe('скоринг вакансии', () => {
     const portrait = await loadPortrait()
     const result = scoreVacancy(portrait, IDEAL)
 
-    expect(criterion(result, 'stack')?.reason).toContain('Nuxt')
+    expect(criterion(result, 'stack')?.reason).toContain('стека Nuxt')
+    expect(criterion(result, 'stack')?.matches?.[0]).toBe('Nuxt')
     expect(criterion(result, 'role')?.reason).toContain('профилем')
     expect(criterion(result, 'role')?.reason).toContain('(fullstack)')
     expect(criterion(result, 'format')?.reason).toContain('remote')
@@ -142,5 +146,78 @@ describe('стаж и технологии портрета', () => {
     expect(terms).toContain('typescript')
     expect(terms).not.toContain('nuxt 4')
     expect(new Set(terms).size).toBe(terms.length)
+  })
+
+  it('ставит стек Nuxt раньше остальных совпадений и выше в выдаче', async () => {
+    const portrait = await loadPortrait()
+    const reordered = {
+      ...portrait,
+      hh: {
+        ...portrait.hh,
+        keywords: ['Git', 'Docker', 'HTML', 'Nuxt', 'Vue', 'TypeScript', 'Nitro'],
+      },
+    }
+    const text = 'Нужен Git, Docker и HTML, а также Nuxt и Vue'
+    const matched = matchedTech(reordered, text)
+
+    expect(matched.slice(0, 2)).toEqual(['Nuxt', 'Vue'])
+    expect(matched.indexOf('Nuxt')).toBeLessThan(matched.indexOf('Git'))
+    expect(
+      matchedTech(
+        { ...reordered, hh: { ...reordered.hh, keywords: ['Vue', 'Git', 'Nuxt'] } },
+        'Vue, Git и Nuxt',
+      ).slice(0, 2),
+    ).toEqual(['Nuxt', 'Vue'])
+
+    const withNuxt = scoreVacancy(reordered, {
+      ...ALIEN,
+      title: 'Nuxt разработчик',
+      description: text,
+    })
+    const withoutNuxt = scoreVacancy(reordered, {
+      ...ALIEN,
+      title: 'Инженер сопровождения',
+      description: 'Git, Docker и HTML',
+    })
+
+    const ranked = (result: ReturnType<typeof scoreVacancy>) => ({
+      total: result.total,
+      nuxtStack: nuxtStackLabels(result.criteria),
+    })
+
+    expect(compareNuxtStackFirst(ranked(withNuxt), ranked(withoutNuxt))).toBeLessThan(0)
+    expect(
+      compareNuxtStackFirst({ total: 60, nuxtStack: ['Nuxt'] }, { total: 90, nuxtStack: ['Vue'] }),
+    ).toBeLessThan(0)
+    expect(
+      compareNuxtStackFirst(
+        { total: 70, nuxtStack: ['Vue'] },
+        { total: 95, nuxtStack: ['TypeScript'] },
+      ),
+    ).toBeLessThan(0)
+    expect(
+      nuxtStackLabels([
+        {
+          key: 'stack',
+          weight: 35,
+          earned: 12,
+          reason: 'совпали технологии стека Nuxt: Vue (1 из 3 для полного балла)',
+        },
+      ]),
+    ).toEqual(['Vue'])
+    expect(
+      nuxtStackLabels([
+        {
+          key: 'stack',
+          weight: 35,
+          earned: 18,
+          reason: 'совпали технологии портрета, без стека Nuxt: Git, Docker',
+        },
+      ]),
+    ).toEqual([])
+    expect(withNuxt.criteria.find((item) => item.key === 'stack')?.matches?.slice(0, 2)).toEqual([
+      'Nuxt',
+      'Vue',
+    ])
   })
 })

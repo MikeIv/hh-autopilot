@@ -53,6 +53,7 @@ const panicAt = computed(() => applyStatus.value?.panicAt ?? null)
       <div :class="$style.intro">
         <h1 :class="$style.title">Очередь ревью</h1>
         <p :class="$style.subtitle">
+          Сначала вакансии с Nuxt, затем с Vue и Nitro; внутри группы — по убыванию оценки.
           Одобренные отклики уходят на hh через браузер: окно 10:00–19:00 МСК, лимит 20 в день,
           капча — остановка. Авто-отправка включается только переменной HH_AUTO_APPLY.
         </p>
