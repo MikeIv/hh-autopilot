@@ -10,18 +10,26 @@
   --beige: #d3c59f;
   --ink: #010101;
   --line: #e6e1d6;
+  --line-strong: #d8d2c4;
   --action-bg: #010101;
   --action-text: #ffffff;
   --success: #0d7a45;
   --success-bg: #e7f6ee;
   --danger: #b4232a;
   --danger-bg: #fdecec;
+  --focus: #010101;
+  --shadow-card: 0 1px 0 rgb(1 1 1 / 4%), 0 18px 40px -32px rgb(1 1 1 / 45%);
+  --shadow-pop: 0 14px 36px -16px rgb(1 1 1 / 32%);
   --radius-card: 24px;
   --radius-control: 16px;
+  --radius-sm: 12px;
   --radius-pill: 999px;
   --space-1: 8px;
   --space-2: 16px;
   --space-3: 24px;
+  --space-4: 32px;
+  /* Высота липкой шапки плюс зазор: на неё же цепляется панель отправки. */
+  --sticky-top: 96px;
 }
 
 html[data-theme='dark'] {
@@ -34,10 +42,14 @@ html[data-theme='dark'] {
   --beige: #d3c59f;
   --ink: #010101;
   --line: #3a342c;
+  --line-strong: #4a4338;
   --action-bg: #d3c59f;
   --action-text: #010101;
   --success: #7ddeaf;
   --success-bg: #1c3328;
   --danger: #ffb1ab;
   --danger-bg: #3a2220;
+  --focus: #f3f2ed;
+  --shadow-card: 0 1px 0 rgb(0 0 0 / 35%), 0 18px 40px -32px rgb(0 0 0 / 80%);
+  --shadow-pop: 0 14px 36px -16px rgb(0 0 0 / 70%);
 }

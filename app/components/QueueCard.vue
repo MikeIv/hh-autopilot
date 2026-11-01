@@ -35,6 +35,9 @@ const VARIANT_LABELS: Record<LetterVariant, string> = {
 
 const DECIDABLE: readonly QueueItem['status'][] = ['queued', 'failed', 'needs_human']
 
+/** Тон статуса для пилюли: хороший, плохой или нейтральный. */
+type StatusTone = 'good' | 'bad' | 'neutral'
+
 const letter = computed(() => props.item.letter)
 const statusLabel = computed(() => STATUS_LABELS[props.item.status])
 const canDecide = computed(() => DECIDABLE.includes(props.item.status))
@@ -72,7 +75,7 @@ const ratingText = computed(() => {
   return rating ?? reviews
 })
 
-const statusTone = computed(() => {
+const statusTone = computed<StatusTone>(() => {
   if (props.item.status === 'sent' || props.item.status === 'approved') {
     return 'good'
   }
@@ -84,6 +87,20 @@ const statusTone = computed(() => {
     return 'bad'
   }
   return 'neutral'
+})
+
+/** Заголовок раскрытого блока письма: вариант, длина и авторство выбора. */
+const letterSummary = computed(() => {
+  const current = letter.value
+  if (!current) {
+    return ''
+  }
+
+  const parts = ['Письмо', VARIANT_LABELS[current.variant], `${current.charCount} знаков`]
+  if (!current.chosen) {
+    parts.push('рекомендация')
+  }
+  return parts.join(' · ')
 })
 
 const sentAtText = computed(() => {
@@ -102,51 +119,52 @@ const sentAtText = computed(() => {
 <template>
   <article :class="[$style.card, archived && $style.decided]">
     <header :class="$style.head">
-      <div :class="$style.headline">
-        <a :class="$style.link" :href="item.url" target="_blank" rel="noreferrer">
-          {{ item.title }}
-        </a>
-        <div :class="$style.employer">
+      <div :class="$style.headMain">
+        <h3 :class="$style.title">
+          <a :class="$style.link" :href="item.url" target="_blank" rel="noreferrer">
+            {{ item.title }}
+          </a>
+        </h3>
+
+        <p :class="$style.companyRow">
           <img
             v-if="item.employer.logo"
             :class="$style.logo"
             :src="item.employer.logo"
             alt=""
-            width="48"
-            height="48"
+            width="32"
+            height="32"
           />
-          <div :class="$style.employerBody">
-            <a
-              v-if="item.employer.url"
-              :class="$style.company"
-              :href="item.employer.url"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {{ item.company }}
-            </a>
-            <p v-else :class="$style.company">{{ item.company }}</p>
-            <p v-if="item.area || item.salary" :class="$style.meta">
-              <span v-if="item.area">{{ item.area }}</span>
-              <span v-if="item.area && item.salary"> · </span>
-              <span v-if="item.salary">{{ item.salary }}</span>
-            </p>
-            <ul v-if="badges.length" :class="$style.badges">
-              <li v-for="badge in badges" :key="badge" :class="$style.badge">{{ badge }}</li>
-            </ul>
-            <p v-if="ratingText" :class="$style.rating">{{ ratingText }}</p>
-          </div>
-        </div>
+          <a
+            v-if="item.employer.url"
+            :class="$style.company"
+            :href="item.employer.url"
+            target="_blank"
+            rel="noreferrer"
+          >
+            {{ item.company }}
+          </a>
+          <span v-else :class="$style.company">{{ item.company }}</span>
+          <span v-if="item.area" :class="$style.meta">· {{ item.area }}</span>
+          <span v-if="item.salary" :class="$style.meta">· {{ item.salary }}</span>
+        </p>
+
+        <p v-if="badges.length || ratingText" :class="$style.badgeRow">
+          <UiPill v-for="badge in badges" :key="badge" tone="accent">{{ badge }}</UiPill>
+          <span v-if="ratingText" :class="$style.rating">{{ ratingText }}</span>
+        </p>
+
         <p v-if="item.nuxtStack.length" :class="$style.nuxt">
           Стек Nuxt: {{ item.nuxtStack.join(', ') }}
         </p>
-        <p v-if="sentAtText" :class="$style.sentAt">Отправлено {{ sentAtText }}</p>
       </div>
-      <div :class="$style.side">
+
+      <div :class="$style.headSide">
         <span :class="[$style.score, item.score.total >= 80 && $style.scoreHigh]">
           {{ item.score.total }}
         </span>
-        <span :class="[$style.status, $style[statusTone]]">{{ statusLabel }}</span>
+        <UiPill :tone="statusTone">{{ statusLabel }}</UiPill>
+        <span v-if="sentAtText" :class="$style.sentAt">{{ sentAtText }}</span>
       </div>
     </header>
 
@@ -162,7 +180,8 @@ const sentAtText = computed(() => {
     <UiNotice v-if="!letter">
       Письмо ещё не собрано — запусти <code>pnpm hh:letters</code>.
     </UiNotice>
-    <template v-else>
+    <UiDisclosure v-else>
+      <template #summary>{{ letterSummary }}</template>
       <div :class="$style.variantRow" role="group" aria-label="Вариант письма">
         <button
           v-for="draft in letter.variants"
@@ -173,21 +192,17 @@ const sentAtText = computed(() => {
           :disabled="!canEditLetter || busy"
           @click="emit('choose', draft.variant)"
         >
-          <UiLoader
-            v-if="choosing && choosingVariant === draft.variant"
-            size="sm"
-            decorative
-          />
+          <UiLoader v-if="choosing && choosingVariant === draft.variant" size="sm" decorative />
           {{ VARIANT_LABELS[draft.variant] }}
-          <span v-if="draft.recommended" :class="$style.recommended"> · рекоменд.</span>
+          <span v-if="draft.recommended" :class="$style.recommended">· рекоменд.</span>
         </button>
       </div>
       <p :class="$style.variant">
-        Письмо · {{ letter.variant }} · {{ letter.charCount }} знаков ·
+        {{ letter.variant }} · {{ letter.charCount }} знаков ·
         {{ letter.chosen ? 'выбрано человеком' : 'рекомендация генератора' }}
       </p>
       <pre :class="$style.letter">{{ letter.body }}</pre>
-    </template>
+    </UiDisclosure>
 
     <footer :class="$style.actions">
       <UiButton v-if="canSend" :disabled="busy" @click="emit('send')">
@@ -211,34 +226,58 @@ const sentAtText = computed(() => {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  height: 100%;
   padding: var(--space-3);
+  border: 1px solid transparent;
   border-radius: var(--radius-card);
   background: var(--surface);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: var(--line-strong);
+    box-shadow: var(--shadow-card);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
+/* Архив лежит на приглушённой поверхности дропдауна: карточке нужен свой фон. */
 .decided {
-  background: var(--surface-muted);
+  border-color: var(--line);
+  background: var(--bg);
+
+  &:hover {
+    box-shadow: var(--shadow-card);
+  }
 }
 
 .head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--space-2);
+  align-items: start;
 }
 
-.headline {
+.headMain {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 6px;
   min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .link {
   color: var(--text);
-  font-size: 1.15rem;
-  font-weight: 700;
-  line-height: 1.35;
   text-decoration: none;
 
   &:hover,
@@ -247,32 +286,31 @@ const sentAtText = computed(() => {
   }
 }
 
-.employer {
+.decided .title {
+  font-size: 1rem;
+}
+
+.companyRow {
   display: flex;
-  gap: var(--space-2);
-  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+  min-width: 0;
 }
 
 .logo {
   flex-shrink: 0;
-  width: 48px;
-  height: 48px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
   background: var(--surface-muted);
 }
 
-.employerBody {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
 .company {
-  margin: 0;
   color: var(--text);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   text-decoration: none;
 
@@ -283,43 +321,30 @@ const sentAtText = computed(() => {
 }
 
 .meta,
-.sentAt,
+.rating,
 .variant,
-.rating {
-  margin: 0;
+.sentAt {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
-.badges {
+.badgeRow {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  align-items: center;
   margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
-.badge {
-  padding: 2px 10px;
-  border-radius: var(--radius-pill);
-  background: var(--beige);
-  color: var(--ink);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.nuxt,
-.sentAt {
+.nuxt {
   margin: 0;
   color: var(--success);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
-.side {
+.headSide {
   display: flex;
-  flex-shrink: 0;
   flex-direction: column;
   gap: 6px;
   align-items: flex-end;
@@ -333,34 +358,13 @@ const sentAtText = computed(() => {
   color: var(--text);
   font-size: 1.05rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
   text-align: center;
 }
 
 .scoreHigh {
   background: var(--success-bg);
   color: var(--success);
-}
-
-.status {
-  padding: 2px 10px;
-  border-radius: var(--radius-pill);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.neutral {
-  background: var(--surface-muted);
-  color: var(--text-muted);
-}
-
-.good {
-  background: var(--success-bg);
-  color: var(--success);
-}
-
-.bad {
-  background: var(--danger-bg);
-  color: var(--danger);
 }
 
 .criteria {
@@ -370,20 +374,29 @@ const sentAtText = computed(() => {
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .criterion {
   display: flex;
   gap: var(--space-1);
+  align-items: baseline;
 }
 
 .criterionScore {
   flex-shrink: 0;
-  width: 4.5rem;
+  width: 4.25rem;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
   color: var(--text);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+.decided .criterionScore {
+  background: transparent;
+  color: var(--text-muted);
 }
 
 .criterionReason {
@@ -394,6 +407,7 @@ const sentAtText = computed(() => {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
+  margin-bottom: var(--space-1);
 }
 
 .variantButton {
@@ -406,11 +420,11 @@ const sentAtText = computed(() => {
   background: var(--surface);
   color: var(--text);
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   cursor: pointer;
 
   &:focus-visible {
-    outline: 2px solid var(--text);
+    outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
 
@@ -433,14 +447,18 @@ const sentAtText = computed(() => {
   opacity: 0.75;
 }
 
+.variant {
+  margin: 0 0 var(--space-1);
+}
+
 .letter {
   margin: 0;
   padding: var(--space-2);
-  border-radius: var(--radius-control);
-  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
   color: var(--text);
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   line-height: 1.5;
   white-space: pre-wrap;
 }
@@ -449,5 +467,8 @@ const sentAtText = computed(() => {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
+  margin-top: auto;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--line);
 }
 </style>
