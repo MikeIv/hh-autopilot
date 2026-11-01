@@ -15,13 +15,16 @@ import type { ManualSendRequest, ManualSendResponse } from '../../shared/types/a
 export function useQueue() {
   const queue = useFetch<QueueResponse>('/api/queue', { key: 'review-queue' })
   const deciding = ref<string | null>(null)
+  const decisionKind = ref<QueueDecision | null>(null)
   const choosing = ref<string | null>(null)
+  const letterVariant = ref<LetterVariant | null>(null)
   const sending = ref<string | null>(null)
   const decisionError = ref<string | null>(null)
   const notice = ref<string | null>(null)
 
   async function decide(item: QueueItem, decision: QueueDecision): Promise<void> {
     deciding.value = item.vacancyId
+    decisionKind.value = decision
     decisionError.value = null
     notice.value = null
 
@@ -33,11 +36,13 @@ export function useQueue() {
       decisionError.value = errorMessage(error, 'Не удалось сохранить решение — попробуй ещё раз')
     } finally {
       deciding.value = null
+      decisionKind.value = null
     }
   }
 
   async function chooseVariant(item: QueueItem, variant: LetterVariant): Promise<void> {
     choosing.value = item.vacancyId
+    letterVariant.value = variant
     decisionError.value = null
     notice.value = null
 
@@ -49,6 +54,7 @@ export function useQueue() {
       decisionError.value = errorMessage(error, 'Не удалось сохранить вариант письма')
     } finally {
       choosing.value = null
+      letterVariant.value = null
     }
   }
 
@@ -73,7 +79,9 @@ export function useQueue() {
   return {
     queue,
     deciding,
+    decisionKind,
     choosing,
+    letterVariant,
     sending,
     decisionError,
     notice,

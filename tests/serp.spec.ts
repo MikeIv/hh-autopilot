@@ -18,6 +18,13 @@ describe('разбор выдачи hh', () => {
       title: 'Senior Fullstack-разработчик (Laravel + Nuxt)',
       company: 'Easy From China',
       url: 'https://hh.ru/vacancy/138950534',
+      employerUrl: 'https://hh.ru/employer/10844339',
+      employerTrusted: true,
+      employerRating: '5.0',
+      employerReviews: '1 отзыв',
+      employerHhRating: false,
+      employerHrBrand: false,
+      employerLogo: null,
       area: 'Москва',
       salaryFrom: 200000,
       salaryTo: null,
@@ -48,6 +55,19 @@ describe('разбор выдачи hh', () => {
     expect(card?.salaryTo).toBe(350000)
     expect(card?.currency).toBe('RUR')
     expect(card?.schedule).toBe('remote')
+  })
+
+  it('читает работодателя: ссылку, отзывы, бейджи и логотип', async () => {
+    const cards = parseSerpPage(await read('ts-fullstack'))
+    const card = cards.find((item) => item.hhId === '138758029')
+
+    expect(card?.employerUrl).toBe('https://hh.ru/employer/2343')
+    expect(card?.employerTrusted).toBe(true)
+    expect(card?.employerRating).toBe('4.2')
+    expect(card?.employerReviews).toBe('10718 отзывов')
+    expect(card?.employerHhRating).toBe(true)
+    expect(card?.employerHrBrand).toBe(true)
+    expect(card?.employerLogo).toBe('https://img.hhcdn.ru/employer-logo/7823407.png')
   })
 
   it('не придумывает зарплату, если её нет в карточке', async () => {

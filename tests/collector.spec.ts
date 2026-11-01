@@ -16,6 +16,13 @@ function card(hhId: string, overrides: Partial<VacancyCard> = {}): VacancyCard {
     title: 'Fullstack-разработчик',
     company: 'Тестовая компания',
     url: `https://hh.ru/vacancy/${hhId}`,
+    employerUrl: null,
+    employerTrusted: false,
+    employerRating: null,
+    employerReviews: null,
+    employerHhRating: false,
+    employerHrBrand: false,
+    employerLogo: null,
     area: 'Москва',
     salaryFrom: 200000,
     salaryTo: null,
@@ -108,5 +115,19 @@ describe('сохранение выдачи', () => {
     expect(vacancy.source).toBe('Nuxt разработчик')
     expect(vacancy.schedule).toBe('remote')
     expect(vacancy.experience).toBe('3-6')
+    expect(vacancy.employerTrusted).toBe(false)
+  })
+
+  it('обновляет вакансию, если изменился рейтинг работодателя', async () => {
+    const saved = await saveCards(
+      [card('200000002', { employerRating: '4.1', employerReviews: '3 отзыва' })],
+      'Nuxt разработчик',
+      prisma,
+    )
+
+    expect(saved).toEqual({ created: 0, updated: 1, unchanged: 0 })
+    const vacancy = await prisma.vacancy.findUniqueOrThrow({ where: { hhId: '200000002' } })
+    expect(vacancy.employerRating).toBe('4.1')
+    expect(vacancy.employerReviews).toBe('3 отзыва')
   })
 })

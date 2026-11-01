@@ -7,6 +7,20 @@ export interface VacancyCard {
   title: string
   company: string
   url: string
+  /** Страница работодателя на hh. `null`, если в карточке нет ссылки `/employer/`. */
+  employerUrl: string | null
+  /** Галочка «Проверенный» рядом с названием. */
+  employerTrusted: boolean
+  /** Оценка отзывов, как её показывает hh: «4.2». */
+  employerRating: string | null
+  /** Подпись к оценке: «10 отзывов». */
+  employerReviews: string | null
+  /** Значок рейтинга работодателей hh. */
+  employerHhRating: boolean
+  /** Значок победителя HR-бренда. */
+  employerHrBrand: boolean
+  /** Логотип с карточки выдачи. */
+  employerLogo: string | null
   area: string | null
   salaryFrom: number | null
   salaryTo: number | null

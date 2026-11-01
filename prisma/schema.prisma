@@ -18,6 +18,14 @@ model Vacancy {
   title       String
   company     String
   url         String
+  /// Страница работодателя на hh. Пусто, пока вакансию не перечитали из выдачи.
+  employerUrl      String?
+  employerTrusted  Boolean   @default(false)
+  employerRating   String?
+  employerReviews  String?
+  employerHhRating Boolean   @default(false)
+  employerHrBrand  Boolean   @default(false)
+  employerLogo     String?
   area        String?
   salaryFrom  Int?
   salaryTo    Int?

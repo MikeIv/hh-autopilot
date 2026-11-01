@@ -1,7 +1,13 @@
 import type { PrismaClient } from '@prisma/client'
 import { prisma } from '../utils/db'
 import { loadPortrait } from '../utils/portrait'
-import type { QueueDecision, QueueItem, QueueLetter, QueueResponse } from '../../shared/types/queue'
+import type {
+  QueueDecision,
+  QueueEmployer,
+  QueueItem,
+  QueueLetter,
+  QueueResponse,
+} from '../../shared/types/queue'
 import { DAILY_APPLICATION_LIMIT } from '../../shared/types/queue'
 import type { ScoreCriterion } from '../../shared/types/score'
 import type { ApplicationStatus, LetterVariant } from '../../shared/types/domain'
@@ -53,6 +59,27 @@ function buildQueueLetter(
   }
 }
 
+/** Работодатель для карточки: пустые поля остаются пустыми, название живёт отдельно. */
+function toEmployer(vacancy: {
+  employerUrl: string | null
+  employerTrusted: boolean
+  employerRating: string | null
+  employerReviews: string | null
+  employerHhRating: boolean
+  employerHrBrand: boolean
+  employerLogo: string | null
+}): QueueEmployer {
+  return {
+    url: vacancy.employerUrl,
+    trusted: vacancy.employerTrusted,
+    rating: vacancy.employerRating,
+    reviews: vacancy.employerReviews,
+    hhRating: vacancy.employerHhRating,
+    hrBrand: vacancy.employerHrBrand,
+    logo: vacancy.employerLogo,
+  }
+}
+
 /** Очередь ревью: прошедшие порог вакансии, их оценки, письма и статусы. */
 export async function readQueue(client: PrismaClient = prisma): Promise<QueueResponse> {
   const [scores, portrait] = await Promise.all([
@@ -86,6 +113,7 @@ export async function readQueue(client: PrismaClient = prisma): Promise<QueueRes
       title: vacancy.title,
       company: vacancy.company,
       url: vacancy.url,
+      employer: toEmployer(vacancy),
       area: vacancy.area,
       salary: formatSalaryText(vacancy.salaryFrom, vacancy.salaryTo, vacancy.currency),
       score: {

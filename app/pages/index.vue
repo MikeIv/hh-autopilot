@@ -3,7 +3,9 @@
 const {
   queue,
   deciding,
+  decisionKind,
   choosing,
+  letterVariant,
   sending,
   decisionError,
   notice,
@@ -49,217 +51,251 @@ const panicAt = computed(() => applyStatus.value?.panicAt ?? null)
 </script>
 
 <template>
-  <main :class="$style.page">
-    <header :class="$style.header">
-      <div :class="$style.intro">
-        <h1 :class="$style.title">Очередь ревью</h1>
-        <p :class="$style.subtitle">
-          Сначала вакансии с Nuxt, затем с Vue и Nitro; внутри группы — по убыванию оценки.
-          Одобренные отклики уходят на hh через браузер: окно 10:00–19:00 МСК, лимит 20 в день,
-          капча — остановка. Авто-отправка включается только переменной HH_AUTO_APPLY.
-        </p>
-        <button
-          type="button"
-          :class="[$style.button, $style.dry]"
-          :disabled="refreshing || applyActive"
-          @click="refreshFromHh"
-        >
-          {{ refreshing ? 'Обновляю выдачу…' : 'Обновить с hh' }}
-        </button>
-        <p v-if="refreshing" :class="$style.note">
-          Читаю поиск hh и пересчитываю оценки. Обычно это около минуты.
-        </p>
-        <p v-if="refreshError" :class="$style.error">{{ refreshError }}</p>
-        <p v-if="refreshNote" :class="$style.success">{{ refreshNote }}</p>
+  <main :class="$style.page" :aria-busy="refreshing">
+    <div v-if="refreshing" :class="$style.busy" role="status" aria-live="polite">
+      <div :class="$style.busyPanel">
+        <UiLoader size="lg" decorative />
+        <p :class="$style.busyText">Читаю поиск hh и пересчитываю оценки</p>
       </div>
+    </div>
 
-      <dl :class="$style.counters">
-        <div :class="$style.counter">
-          <dt :class="$style.counterLabel">Одобрено сегодня</dt>
-          <dd :class="$style.counterValue">
-            {{ stats?.approvedToday ?? 0 }} / {{ stats?.dailyLimit ?? 0 }}
-          </dd>
+    <div :class="$style.content" :inert="refreshing || undefined">
+      <header :class="$style.header">
+        <div :class="$style.intro">
+          <div :class="$style.titleRow">
+            <h1 :class="$style.title">Очередь ревью</h1>
+            <ClientOnly>
+              <ThemeToggle />
+            </ClientOnly>
+          </div>
+          <p :class="$style.subtitle">
+            Сначала вакансии с Nuxt, затем с Vue и Nitro. Одобренные отклики уходят на hh с 10:00 до
+            19:00 МСК, не больше 20 в день.
+          </p>
+          <UiButton
+            variant="secondary"
+            :disabled="refreshing || applyActive"
+            @click="refreshFromHh"
+          >
+            {{ refreshing ? 'Обновляю выдачу…' : 'Обновить с hh' }}
+          </UiButton>
         </div>
-        <div :class="$style.counter">
-          <dt :class="$style.counterLabel">Отправлено сегодня</dt>
-          <dd :class="$style.counterValue">
-            {{ stats?.sentToday ?? 0 }} / {{ stats?.dailyLimit ?? 0 }}
-          </dd>
-        </div>
-        <div :class="$style.counter">
-          <dt :class="$style.counterLabel">Порог</dt>
-          <dd :class="$style.counterValue">{{ stats?.threshold ?? 0 }}</dd>
-        </div>
-      </dl>
-    </header>
 
-    <section :class="$style.apply" aria-labelledby="apply-title">
-      <div :class="$style.applyHeader">
-        <h2 id="apply-title" :class="$style.sectionTitle">Отправка откликов</h2>
-        <dl :class="$style.applyState">
-          <div :class="$style.applyStateItem">
-            <dt :class="$style.applyStateLabel">Авто-отправка</dt>
-            <dd :class="[$style.applyStateValue, applyStatus?.autoApplyEnabled && $style.stateOn]">
-              {{ applyStatus?.autoApplyEnabled ? 'включена' : 'выключена (только сухой прогон)' }}
+        <dl :class="$style.counters">
+          <div :class="$style.counter">
+            <dt :class="$style.counterLabel">Одобрено сегодня</dt>
+            <dd :class="$style.counterValue">
+              {{ stats?.approvedToday ?? 0 }} / {{ stats?.dailyLimit ?? 0 }}
             </dd>
           </div>
-          <div :class="$style.applyStateItem">
-            <dt :class="$style.applyStateLabel">Окно</dt>
-            <dd :class="[$style.applyStateValue, applyStatus?.windowOpen && $style.stateOn]">
-              {{ applyStatus?.windowOpen ? 'открыто' : 'закрыто' }}
+          <div :class="$style.counter">
+            <dt :class="$style.counterLabel">Отправлено сегодня</dt>
+            <dd :class="$style.counterValue">
+              {{ stats?.sentToday ?? 0 }} / {{ stats?.dailyLimit ?? 0 }}
             </dd>
           </div>
-          <div :class="$style.applyStateItem">
-            <dt :class="$style.applyStateLabel">Стоп</dt>
-            <dd :class="[$style.applyStateValue, panicAt && $style.stateStop]">
-              {{ panicAt ? 'активен (panic)' : 'нет' }}
-            </dd>
+          <div :class="$style.counter">
+            <dt :class="$style.counterLabel">Порог</dt>
+            <dd :class="$style.counterValue">{{ stats?.threshold ?? 0 }}</dd>
           </div>
         </dl>
+      </header>
+
+      <section :class="$style.apply" aria-labelledby="apply-title">
+        <div :class="$style.applyHeader">
+          <h2 id="apply-title" :class="$style.sectionTitle">Отправка откликов</h2>
+          <dl :class="$style.applyState">
+            <div :class="$style.applyStateItem">
+              <dt :class="$style.applyStateLabel">Авто-отправка</dt>
+              <dd
+                :class="[$style.applyStateValue, applyStatus?.autoApplyEnabled && $style.stateOn]"
+              >
+                {{ applyStatus?.autoApplyEnabled ? 'включена' : 'выключена (только сухой прогон)' }}
+              </dd>
+            </div>
+            <div :class="$style.applyStateItem">
+              <dt :class="$style.applyStateLabel">Окно</dt>
+              <dd :class="[$style.applyStateValue, applyStatus?.windowOpen && $style.stateOn]">
+                {{ applyStatus?.windowOpen ? 'открыто' : 'закрыто' }}
+              </dd>
+            </div>
+            <div :class="$style.applyStateItem">
+              <dt :class="$style.applyStateLabel">Стоп</dt>
+              <dd :class="[$style.applyStateValue, panicAt && $style.stateStop]">
+                {{ panicAt ? 'активен (panic)' : 'нет' }}
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        <div :class="$style.applyActions">
+          <UiButton variant="secondary" :disabled="starting" @click="start(true)">
+            Сухой прогон
+          </UiButton>
+          <UiButton
+            :disabled="starting || applyActive || refreshing || !applyStatus?.autoApplyEnabled"
+            @click="start(false)"
+          >
+            Запустить прогон
+          </UiButton>
+          <UiButton variant="danger" :disabled="!applyActive && !panicAt" @click="panic">
+            Стоп (panic)
+          </UiButton>
+          <UiButton v-if="panicAt" variant="secondary" @click="releasePanic">Снять стоп</UiButton>
+        </div>
+
+        <UiNotice v-if="applyActive">
+          Прогон идёт на сервере — счётчики обновляются каждые 3 секунды.
+        </UiNotice>
+        <UiNotice v-if="!applyStatus?.autoApplyEnabled">
+          Живая отправка выключена: включи <code>HH_AUTO_APPLY=true</code> в <code>.env</code> и
+          перезапусти сервер. Кнопка «Отправить сейчас» в карточке работает и без неё.
+        </UiNotice>
+        <UiNotice v-if="runError" tone="error">{{ runError }}</UiNotice>
+        <UiNotice v-if="applyStatus?.lastRun?.message">
+          Последний прогон: {{ applyStatus.lastRun.message }}
+        </UiNotice>
+
+        <template v-if="dryRun">
+          <UiNotice>{{ dryRun.message }}</UiNotice>
+          <ul :class="$style.plan">
+            <li v-for="target in dryRun.planned" :key="target.vacancyId">
+              <a :class="$style.planLink" :href="target.url" target="_blank" rel="noreferrer">
+                {{ target.title }}
+              </a>
+              — {{ target.company }} · {{ target.variant }} · {{ target.charCount }} знаков
+            </li>
+          </ul>
+          <UiNotice v-for="skip in dryRun.skips" :key="skip.vacancyId">
+            Пропуск: «{{ skip.title }}» — {{ skip.message }}
+          </UiNotice>
+        </template>
+      </section>
+
+      <UiNotice v-if="refreshError" tone="error">{{ refreshError }}</UiNotice>
+      <UiNotice v-if="refreshNote" tone="success">{{ refreshNote }}</UiNotice>
+      <UiNotice v-if="decisionError" tone="error">{{ decisionError }}</UiNotice>
+      <UiNotice v-if="notice" tone="success">{{ notice }}</UiNotice>
+
+      <div v-if="loading" :class="$style.loading">
+        <UiLoader size="md" label="Загружаю очередь" />
       </div>
 
-      <div :class="$style.applyActions">
-        <button
-          type="button"
-          :class="[$style.button, $style.dry]"
-          :disabled="starting"
-          @click="start(true)"
-        >
-          Сухой прогон
-        </button>
-        <button
-          type="button"
-          :class="[$style.button, $style.send]"
-          :disabled="starting || applyActive || refreshing || !applyStatus?.autoApplyEnabled"
-          @click="start(false)"
-        >
-          Запустить прогон
-        </button>
-        <button
-          type="button"
-          :class="[$style.button, $style.stop]"
-          :disabled="!applyActive && !panicAt"
-          @click="panic"
-        >
-          Стоп (panic)
-        </button>
-        <button v-if="panicAt" type="button" :class="$style.button" @click="releasePanic">
-          Снять стоп
-        </button>
-      </div>
+      <UiNotice v-else-if="failed" tone="error">
+        Не удалось загрузить очередь — обнови страницу или проверь базу.
+      </UiNotice>
 
-      <p v-if="applyActive" :class="$style.note">
-        Прогон идёт на сервере — счётчики обновляются каждые 3 секунды.
-      </p>
-      <p v-if="!applyStatus?.autoApplyEnabled" :class="$style.note">
-        Живая отправка выключена: включи <code>HH_AUTO_APPLY=true</code> в <code>.env</code> и
-        перезапусти сервер. Кнопка «Отправить сейчас» в карточке работает и без неё.
-      </p>
-      <p v-if="runError" :class="$style.error">{{ runError }}</p>
-      <p v-if="applyStatus?.lastRun?.message" :class="$style.note">
-        Последний прогон: {{ applyStatus.lastRun.message }}
-      </p>
+      <UiNotice v-else-if="items.length === 0">
+        Пусто: собери вакансии (<code>pnpm hh:collect</code>), оцени их (<code>pnpm hh:score</code>)
+        и подготовь письма (<code>pnpm hh:letters</code>).
+      </UiNotice>
 
-      <template v-if="dryRun">
-        <p :class="$style.note">{{ dryRun.message }}</p>
-        <ul :class="$style.plan">
-          <li v-for="target in dryRun.planned" :key="target.vacancyId">
-            <a :class="$style.planLink" :href="target.url" target="_blank" rel="noreferrer">
-              {{ target.title }}
-            </a>
-            — {{ target.company }} · {{ target.variant }} · {{ target.charCount }} знаков
-          </li>
-        </ul>
-        <p v-for="skip in dryRun.skips" :key="skip.vacancyId" :class="$style.note">
-          Пропуск: «{{ skip.title }}» — {{ skip.message }}
-        </p>
+      <template v-else>
+        <section :class="$style.section">
+          <h2 :class="$style.sectionTitle">Ждут решения — {{ waiting.length }}</h2>
+          <UiNotice v-if="waiting.length === 0">Всё разобрано.</UiNotice>
+          <ul :class="$style.list">
+            <li v-for="item in waiting" :key="item.vacancyId">
+              <QueueCard
+                :item="item"
+                :pending="deciding === item.vacancyId"
+                :decision="deciding === item.vacancyId ? decisionKind : null"
+                :choosing="choosing === item.vacancyId"
+                :choosing-variant="choosing === item.vacancyId ? letterVariant : null"
+                :sending="sending === item.vacancyId"
+                @decide="decide(item, $event)"
+                @choose="chooseVariant(item, $event)"
+                @send="sendNow(item)"
+              />
+            </li>
+          </ul>
+        </section>
+
+        <section v-if="working.length > 0" :class="$style.section">
+          <h2 :class="$style.sectionTitle">В работе — {{ working.length }}</h2>
+          <ul :class="$style.list">
+            <li v-for="item in working" :key="item.vacancyId">
+              <QueueCard
+                :item="item"
+                :pending="deciding === item.vacancyId"
+                :decision="deciding === item.vacancyId ? decisionKind : null"
+                :choosing="choosing === item.vacancyId"
+                :choosing-variant="choosing === item.vacancyId ? letterVariant : null"
+                :sending="sending === item.vacancyId"
+                @decide="decide(item, $event)"
+                @choose="chooseVariant(item, $event)"
+                @send="sendNow(item)"
+              />
+            </li>
+          </ul>
+        </section>
+
+        <section v-if="decided.length > 0" :class="$style.section">
+          <h2 :class="$style.sectionTitle">Разобранные — {{ decided.length }}</h2>
+          <ul :class="$style.list">
+            <li v-for="item in decided" :key="item.vacancyId">
+              <QueueCard
+                :item="item"
+                :pending="deciding === item.vacancyId"
+                :decision="deciding === item.vacancyId ? decisionKind : null"
+                :choosing="choosing === item.vacancyId"
+                :choosing-variant="choosing === item.vacancyId ? letterVariant : null"
+                :sending="sending === item.vacancyId"
+                @decide="decide(item, $event)"
+                @choose="chooseVariant(item, $event)"
+                @send="sendNow(item)"
+              />
+            </li>
+          </ul>
+        </section>
       </template>
-    </section>
-
-    <p v-if="decisionError" :class="$style.error">{{ decisionError }}</p>
-    <p v-if="notice" :class="$style.success">{{ notice }}</p>
-
-    <p v-if="loading" :class="$style.note">Загружаю очередь…</p>
-
-    <p v-else-if="failed" :class="$style.error">
-      Не удалось загрузить очередь — обнови страницу или проверь базу.
-    </p>
-
-    <p v-else-if="items.length === 0" :class="$style.empty">
-      Пусто: собери вакансии (<code>pnpm hh:collect</code>), оцени их (<code>pnpm hh:score</code>) и
-      подготовь письма (<code>pnpm hh:letters</code>).
-    </p>
-
-    <template v-else>
-      <section :class="$style.section">
-        <h2 :class="$style.sectionTitle">Ждут решения — {{ waiting.length }}</h2>
-        <p v-if="waiting.length === 0" :class="$style.note">Всё разобрано.</p>
-        <ul :class="$style.list">
-          <li v-for="item in waiting" :key="item.vacancyId">
-            <QueueCard
-              :item="item"
-              :pending="deciding === item.vacancyId"
-              :choosing="choosing === item.vacancyId"
-              :sending="sending === item.vacancyId"
-              @decide="decide(item, $event)"
-              @choose="chooseVariant(item, $event)"
-              @send="sendNow(item)"
-            />
-          </li>
-        </ul>
-      </section>
-
-      <section v-if="working.length > 0" :class="$style.section">
-        <h2 :class="$style.sectionTitle">В работе — {{ working.length }}</h2>
-        <ul :class="$style.list">
-          <li v-for="item in working" :key="item.vacancyId">
-            <QueueCard
-              :item="item"
-              :pending="deciding === item.vacancyId"
-              :choosing="choosing === item.vacancyId"
-              :sending="sending === item.vacancyId"
-              @decide="decide(item, $event)"
-              @choose="chooseVariant(item, $event)"
-              @send="sendNow(item)"
-            />
-          </li>
-        </ul>
-      </section>
-
-      <section v-if="decided.length > 0" :class="$style.section">
-        <h2 :class="$style.sectionTitle">Разобранные — {{ decided.length }}</h2>
-        <ul :class="$style.list">
-          <li v-for="item in decided" :key="item.vacancyId">
-            <QueueCard
-              :item="item"
-              :choosing="choosing === item.vacancyId"
-              :sending="sending === item.vacancyId"
-              @decide="decide(item, $event)"
-              @choose="chooseVariant(item, $event)"
-              @send="sendNow(item)"
-            />
-          </li>
-        </ul>
-      </section>
-    </template>
+    </div>
   </main>
 </template>
 
 <style module lang="scss">
 .page {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  position: relative;
   max-width: 72rem;
   margin: 0 auto;
-  padding: 2rem 1.25rem 4rem;
-  color: #232a36;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  padding: var(--space-3) 20px 64px;
+  color: var(--text);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.busy {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
+}
+
+.busyPanel {
+  position: sticky;
+  top: 28vh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+  align-self: flex-start;
+  height: fit-content;
+  padding: var(--space-3);
+  text-align: center;
+}
+
+.busyText {
+  margin: 0;
+  max-width: 18rem;
+  color: var(--text);
+  font-weight: 600;
 }
 
 .header {
@@ -267,50 +303,59 @@ const panicAt = computed(() => applyStatus.value?.panicAt ?? null)
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-2);
 }
 
 .intro {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  max-width: 42rem;
+  gap: var(--space-2);
+  align-items: flex-start;
+  max-width: 40rem;
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
 }
 
 .title {
   margin: 0;
-  font-size: 1.6rem;
-  line-height: 1.25;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.15;
 }
 
 .subtitle {
   margin: 0;
-  color: #5c6472;
-  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-size: 1rem;
 }
 
 .counters {
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: var(--space-1);
   margin: 0;
 }
 
 .counter {
-  min-width: 8.5rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid #d8dce3;
-  border-radius: 0.6rem;
-  background: #f7f8fa;
+  min-width: 9rem;
+  padding: var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--surface);
 }
 
 .counterLabel {
-  color: #5c6472;
-  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .counterValue {
-  margin: 0.15rem 0 0;
-  font-size: 1.1rem;
+  margin: 4px 0 0;
+  font-size: 1.2rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -318,11 +363,10 @@ const panicAt = computed(() => applyStatus.value?.panicAt ?? null)
 .apply {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1.25rem;
-  border: 1px solid #d8dce3;
-  border-radius: 0.75rem;
-  background: #fff;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--surface);
 }
 
 .applyHeader {
@@ -330,142 +374,92 @@ const panicAt = computed(() => applyStatus.value?.panicAt ?? null)
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-2);
 }
 
 .applyState {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--space-2);
   margin: 0;
 }
 
 .applyStateItem {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 2px;
 }
 
 .applyStateLabel {
-  color: #5c6472;
-  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .applyStateValue {
   margin: 0;
-  color: #5c6472;
-  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
   font-weight: 600;
 }
 
 .stateOn {
-  color: #1c6b3a;
+  color: var(--success);
 }
 
 .stateStop {
-  color: #8a1f1f;
+  color: var(--danger);
 }
 
 .applyActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.button {
-  padding: 0.4rem 0.9rem;
-  border: 1px solid #d8dce3;
-  border-radius: 0.5rem;
-  background: #fff;
-  color: #232a36;
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-
-  &:disabled {
-    cursor: default;
-    opacity: 0.5;
-  }
-}
-
-.dry {
-  border-color: #15294b;
-  color: #15294b;
-}
-
-.send {
-  border-color: #15294b;
-  background: #15294b;
-  color: #fff;
-}
-
-.stop {
-  border-color: #8a1f1f;
-  color: #8a1f1f;
+  gap: var(--space-1);
 }
 
 .plan {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 4px;
   margin: 0;
   padding-left: 1.25rem;
-  color: #33415c;
-  font-size: 0.9rem;
+  color: var(--text);
+  font-size: 0.95rem;
 }
 
 .planLink {
-  color: #15294b;
+  color: var(--text);
   font-weight: 600;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-2);
 }
 
 .sectionTitle {
   margin: 0;
-  color: #33415c;
-  font-size: 0.95rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.note,
-.empty {
-  margin: 0;
-  color: #5c6472;
-  font-size: 0.95rem;
-}
-
-.success {
-  margin: 0;
-  padding: 0.6rem 0.75rem;
-  border-radius: 0.5rem;
-  background: #e3f2e8;
-  color: #1c6b3a;
-  font-size: 0.9rem;
-}
-
-.error {
-  margin: 0;
-  padding: 0.6rem 0.75rem;
-  border-radius: 0.5rem;
-  background: #fdecec;
-  color: #8a1f1f;
-  font-size: 0.9rem;
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3);
 }
 </style>

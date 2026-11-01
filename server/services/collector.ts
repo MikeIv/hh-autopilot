@@ -43,6 +43,13 @@ function rawHash(card: VacancyCard): string {
     card.schedule,
     card.experience,
     card.area,
+    card.employerUrl,
+    card.employerTrusted,
+    card.employerRating,
+    card.employerReviews,
+    card.employerHhRating,
+    card.employerHrBrand,
+    card.employerLogo,
   ]
   return createHash('sha1').update(fields.join('|')).digest('hex')
 }

@@ -27,6 +27,32 @@ function textOf(node: Node): string {
 
 const clean = (value: string): string => value.replace(/\s+/g, ' ').trim()
 
+/** Подпись бейджа: пустой узел не становится пустой строкой в карточке. */
+function labeled(node: Node | undefined): string | null {
+  if (!node) {
+    return null
+  }
+  const value = clean(textOf(node))
+  return value || null
+}
+
+/** Адрес картинки логотипа. Берём только абсолютный src, без встроенных данных. */
+function imageSrc(root: Node | undefined): string | null {
+  if (!root) {
+    return null
+  }
+  for (const node of walk([root])) {
+    if (node.type !== 'tag' || node.name !== 'img') {
+      continue
+    }
+    const src = node.attribs.src?.trim() ?? ''
+    if (/^https?:\/\//.test(src)) {
+      return src
+    }
+  }
+  return null
+}
+
 /** Маркер разметки hh: на `data-qa` держатся заголовок, работодатель, адрес и метки. */
 const dataQa = (node: Node): string => (node.type === 'tag' ? (node.attribs['data-qa'] ?? '') : '')
 
@@ -68,6 +94,33 @@ function parseSalary(text: string): Pick<VacancyCard, 'salaryFrom' | 'salaryTo' 
   }
 }
 
+/** Галочка, рейтинг hh и HR-бренд: один проход по узлам карточки. */
+function employerMarks(nodes: readonly Node[]): {
+  trusted: boolean
+  hhRating: boolean
+  hrBrand: boolean
+} {
+  let trusted = false
+  let hhRating = false
+  let hrBrand = false
+
+  for (const node of nodes) {
+    const qa = dataQa(node)
+    if (qa === 'trusted-employer-link') {
+      trusted = true
+    } else if (qa.startsWith('vacancy-serp__vacancy_employer-hh-rating')) {
+      hhRating = true
+    } else if (qa.startsWith('vacancy-serp__vacancy_hrbrand')) {
+      hrBrand = true
+    }
+    if (trusted && hhRating && hrBrand) {
+      break
+    }
+  }
+
+  return { trusted, hhRating, hrBrand }
+}
+
 /** Одна карточка выдачи: `null`, если разметка не дала обязательные поля. */
 function parseCard(card: Node): VacancyCard | null {
   const nodes = [...walk([card])]
@@ -82,6 +135,9 @@ function parseCard(card: Node): VacancyCard | null {
   const employerNode =
     byQa('vacancy-serp__vacancy-employer-text') ?? byQa('vacancy-serp__vacancy-employer')
   const company = employerNode ? clean(textOf(employerNode)) : ''
+  const employerLink = byQa('vacancy-serp__vacancy-employer')
+  const employerHref = employerLink?.type === 'tag' ? employerLink.attribs.href : undefined
+  const employerId = employerHref?.match(/\/employer\/(\d+)/)?.[1]
 
   const titleNode = byQa('serp-item__title-text') ?? titleLink
   const title = titleNode ? clean(textOf(titleNode)) : ''
@@ -93,12 +149,20 @@ function parseCard(card: Node): VacancyCard | null {
   const experienceMarker = byPrefix(EXPERIENCE_PREFIX)
   const scheduleMarker = byPrefix(SCHEDULE_PREFIX)
   const addressNode = byQa('vacancy-serp__vacancy-address')
+  const marks = employerMarks(nodes)
 
   return {
     hhId,
     title,
     company,
     url: `https://hh.ru/vacancy/${hhId}`,
+    employerUrl: employerId ? `https://hh.ru/employer/${employerId}` : null,
+    employerTrusted: marks.trusted,
+    employerRating: labeled(byQa('company-review-rating-value')),
+    employerReviews: labeled(byQa('company-review-rating-reviews-count')),
+    employerHhRating: marks.hhRating,
+    employerHrBrand: marks.hrBrand,
+    employerLogo: imageSrc(byQa('vacancy-serp__vacancy-employer-logo-image')),
     area: addressNode ? clean(textOf(addressNode)) : null,
     ...parseSalary(clean(textOf(card))),
     schedule: scheduleMarker ? dataQa(scheduleMarker).slice(SCHEDULE_PREFIX.length) : null,

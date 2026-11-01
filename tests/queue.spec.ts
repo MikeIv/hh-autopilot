@@ -77,6 +77,18 @@ describe('очередь ревью', () => {
     await prisma.letter.create({
       data: { vacancyId: first.id, variant: 'product', body: 'Здравствуйте!', charCount: 14 },
     })
+    await prisma.vacancy.update({
+      where: { id: first.id },
+      data: {
+        employerUrl: 'https://hh.ru/employer/1',
+        employerTrusted: true,
+        employerRating: '4.8',
+        employerReviews: '12 отзывов',
+        employerHhRating: true,
+        employerHrBrand: false,
+        employerLogo: 'https://img.hhcdn.ru/employer-logo/1.png',
+      },
+    })
 
     await createVacancy(prisma, '500000002', 'Frontend разработчик (Vue)', true, 70)
     await createVacancy(prisma, '500000003', 'Java-разработчик', false, 30)
@@ -96,6 +108,15 @@ describe('очередь ревью', () => {
     const [first, second] = queue.items
     expect(plain(first?.salary ?? null)).toBe('250 000 – 350 000 ₽')
     expect(first?.area).toBe('Москва')
+    expect(first?.employer).toEqual({
+      url: 'https://hh.ru/employer/1',
+      trusted: true,
+      rating: '4.8',
+      reviews: '12 отзывов',
+      hhRating: true,
+      hrBrand: false,
+      logo: 'https://img.hhcdn.ru/employer-logo/1.png',
+    })
     expect(first?.letter?.variant).toBe('product')
     expect(first?.status).toBe('queued')
     expect(second?.letter).toBeNull()

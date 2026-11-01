@@ -25,6 +25,17 @@ export interface QueueLetter {
   variants: QueueLetterVariant[]
 }
 
+/** Работодатель в очереди: только то, что уже было на карточке выдачи. */
+export interface QueueEmployer {
+  url: string | null
+  trusted: boolean
+  rating: string | null
+  reviews: string | null
+  hhRating: boolean
+  hrBrand: boolean
+  logo: string | null
+}
+
 /** Вакансия в очереди ревью: оценка с причинами, письмо и статус отклика. */
 export interface QueueItem {
   vacancyId: string
@@ -32,6 +43,7 @@ export interface QueueItem {
   title: string
   company: string
   url: string
+  employer: QueueEmployer
   area: string | null
   salary: string | null
   score: ScoreResult

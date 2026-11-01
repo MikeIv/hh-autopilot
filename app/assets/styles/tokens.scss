@@ -1,0 +1,43 @@
+/* Тёплая палитра по мотивам SC Shelkovskiy: беж, чернила, мягкие поверхности. */
+
+:root {
+  color-scheme: light;
+  --bg: #fbfaf9;
+  --surface: #ffffff;
+  --surface-muted: #f3f2ed;
+  --text: #010101;
+  --text-muted: #5f5a52;
+  --beige: #d3c59f;
+  --ink: #010101;
+  --line: #e6e1d6;
+  --action-bg: #010101;
+  --action-text: #ffffff;
+  --success: #0d7a45;
+  --success-bg: #e7f6ee;
+  --danger: #b4232a;
+  --danger-bg: #fdecec;
+  --radius-card: 24px;
+  --radius-control: 16px;
+  --radius-pill: 999px;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #161412;
+  --surface: #221f1b;
+  --surface-muted: #2c2823;
+  --text: #f3f2ed;
+  --text-muted: #b7b0a4;
+  --beige: #d3c59f;
+  --ink: #010101;
+  --line: #3a342c;
+  --action-bg: #d3c59f;
+  --action-text: #010101;
+  --success: #7ddeaf;
+  --success-bg: #1c3328;
+  --danger: #ffb1ab;
+  --danger-bg: #3a2220;
+}

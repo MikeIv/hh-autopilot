@@ -5,7 +5,9 @@ import type { LetterVariant } from '../../shared/types/domain'
 const props = defineProps<{
   item: QueueItem
   pending?: boolean
+  decision?: QueueDecision | null
   choosing?: boolean
+  choosingVariant?: LetterVariant | null
   sending?: boolean
 }>()
 
@@ -47,6 +49,43 @@ const approveLabel = computed(() =>
   props.item.status === 'queued' ? 'Одобрить' : 'Одобрить снова',
 )
 
+const badges = computed(() => {
+  const employer = props.item.employer
+  const labels: string[] = []
+  if (employer.trusted) {
+    labels.push('Проверенный')
+  }
+  if (employer.hhRating) {
+    labels.push('Рейтинг hh')
+  }
+  if (employer.hrBrand) {
+    labels.push('HR-бренд')
+  }
+  return labels
+})
+
+const ratingText = computed(() => {
+  const { rating, reviews } = props.item.employer
+  if (rating && reviews) {
+    return `${rating} · ${reviews}`
+  }
+  return rating ?? reviews
+})
+
+const statusTone = computed(() => {
+  if (props.item.status === 'sent' || props.item.status === 'approved') {
+    return 'good'
+  }
+  if (
+    props.item.status === 'failed' ||
+    props.item.status === 'rejected' ||
+    props.item.status === 'needs_human'
+  ) {
+    return 'bad'
+  }
+  return 'neutral'
+})
+
 const sentAtText = computed(() => {
   if (!props.item.sentAt) {
     return null
@@ -67,11 +106,37 @@ const sentAtText = computed(() => {
         <a :class="$style.link" :href="item.url" target="_blank" rel="noreferrer">
           {{ item.title }}
         </a>
-        <p :class="$style.meta">
-          <span>{{ item.company }}</span>
-          <span v-if="item.area"> · {{ item.area }}</span>
-          <span v-if="item.salary"> · {{ item.salary }}</span>
-        </p>
+        <div :class="$style.employer">
+          <img
+            v-if="item.employer.logo"
+            :class="$style.logo"
+            :src="item.employer.logo"
+            alt=""
+            width="48"
+            height="48"
+          />
+          <div :class="$style.employerBody">
+            <a
+              v-if="item.employer.url"
+              :class="$style.company"
+              :href="item.employer.url"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {{ item.company }}
+            </a>
+            <p v-else :class="$style.company">{{ item.company }}</p>
+            <p v-if="item.area || item.salary" :class="$style.meta">
+              <span v-if="item.area">{{ item.area }}</span>
+              <span v-if="item.area && item.salary"> · </span>
+              <span v-if="item.salary">{{ item.salary }}</span>
+            </p>
+            <ul v-if="badges.length" :class="$style.badges">
+              <li v-for="badge in badges" :key="badge" :class="$style.badge">{{ badge }}</li>
+            </ul>
+            <p v-if="ratingText" :class="$style.rating">{{ ratingText }}</p>
+          </div>
+        </div>
         <p v-if="item.nuxtStack.length" :class="$style.nuxt">
           Стек Nuxt: {{ item.nuxtStack.join(', ') }}
         </p>
@@ -81,7 +146,7 @@ const sentAtText = computed(() => {
         <span :class="[$style.score, item.score.total >= 80 && $style.scoreHigh]">
           {{ item.score.total }}
         </span>
-        <span :class="$style.status">{{ statusLabel }}</span>
+        <span :class="[$style.status, $style[statusTone]]">{{ statusLabel }}</span>
       </div>
     </header>
 
@@ -92,11 +157,11 @@ const sentAtText = computed(() => {
       </li>
     </ul>
 
-    <p v-if="item.error" :class="$style.cardError">{{ item.error }}</p>
+    <UiNotice v-if="item.error" tone="error">{{ item.error }}</UiNotice>
 
-    <p v-if="!letter" :class="$style.note">
+    <UiNotice v-if="!letter">
       Письмо ещё не собрано — запусти <code>pnpm hh:letters</code>.
-    </p>
+    </UiNotice>
     <template v-else>
       <div :class="$style.variantRow" role="group" aria-label="Вариант письма">
         <button
@@ -108,6 +173,11 @@ const sentAtText = computed(() => {
           :disabled="!canEditLetter || busy"
           @click="emit('choose', draft.variant)"
         >
+          <UiLoader
+            v-if="choosing && choosingVariant === draft.variant"
+            size="sm"
+            decorative
+          />
           {{ VARIANT_LABELS[draft.variant] }}
           <span v-if="draft.recommended" :class="$style.recommended"> · рекоменд.</span>
         </button>
@@ -120,31 +190,18 @@ const sentAtText = computed(() => {
     </template>
 
     <footer :class="$style.actions">
-      <button
-        v-if="canSend"
-        type="button"
-        :class="[$style.button, $style.send]"
-        :disabled="busy"
-        @click="emit('send')"
-      >
+      <UiButton v-if="canSend" :disabled="busy" @click="emit('send')">
+        <UiLoader v-if="sending" size="sm" decorative />
         {{ sending ? 'Отправляю…' : 'Отправить сейчас' }}
-      </button>
-      <button
-        type="button"
-        :class="[$style.button, $style.approve]"
-        :disabled="busy || !canDecide"
-        @click="emit('decide', 'approve')"
-      >
+      </UiButton>
+      <UiButton :disabled="busy || !canDecide" @click="emit('decide', 'approve')">
+        <UiLoader v-if="pending && decision === 'approve'" size="sm" decorative />
         {{ approveLabel }}
-      </button>
-      <button
-        type="button"
-        :class="[$style.button, $style.reject]"
-        :disabled="busy || !canDecide"
-        @click="emit('decide', 'reject')"
-      >
+      </UiButton>
+      <UiButton variant="danger" :disabled="busy || !canDecide" @click="emit('decide', 'reject')">
+        <UiLoader v-if="pending && decision === 'reject'" size="sm" decorative />
         Отклонить
-      </button>
+      </UiButton>
     </footer>
   </article>
 </template>
@@ -153,36 +210,34 @@ const sentAtText = computed(() => {
 .card {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1.25rem;
-  border: 1px solid #d8dce3;
-  border-radius: 0.75rem;
-  background: #fff;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--surface);
 }
 
 .decided {
-  background: #f7f8fa;
-  border-color: #e4e7ec;
+  background: var(--surface-muted);
 }
 
 .head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-2);
 }
 
 .headline {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-1);
   min-width: 0;
 }
 
 .link {
-  color: #15294b;
-  font-size: 1.05rem;
-  font-weight: 600;
+  color: var(--text);
+  font-size: 1.15rem;
+  font-weight: 700;
   line-height: 1.35;
   text-decoration: none;
 
@@ -192,140 +247,200 @@ const sentAtText = computed(() => {
   }
 }
 
-.meta,
-.sentAt {
+.employer {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+
+.logo {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-muted);
+}
+
+.employerBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.company {
   margin: 0;
-  color: #5c6472;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.meta,
+.sentAt,
+.variant,
+.rating {
+  margin: 0;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
-.nuxt {
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   margin: 0;
-  color: #1c6b3a;
-  font-size: 0.85rem;
+  padding: 0;
+  list-style: none;
+}
+
+.badge {
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--beige);
+  color: var(--ink);
+  font-size: 0.8rem;
   font-weight: 600;
 }
 
+.nuxt,
 .sentAt {
-  color: #1c6b3a;
+  margin: 0;
+  color: var(--success);
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
 .side {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.25rem;
   flex-shrink: 0;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
 }
 
 .score {
-  min-width: 2.5rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  background: #eef1f5;
-  color: #33415c;
+  min-width: 2.75rem;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  color: var(--text);
   font-size: 1.05rem;
   font-weight: 700;
   text-align: center;
 }
 
 .scoreHigh {
-  background: #e3f2e8;
-  color: #1c6b3a;
+  background: var(--success-bg);
+  color: var(--success);
 }
 
 .status {
-  color: #5c6472;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
   font-size: 0.8rem;
-  text-transform: lowercase;
+  font-weight: 600;
+}
+
+.neutral {
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+.good {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.bad {
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 .criteria {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
 .criterion {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-1);
 }
 
 .criterionScore {
   flex-shrink: 0;
-  width: 4rem;
-  color: #33415c;
-  font-variant-numeric: tabular-nums;
+  width: 4.5rem;
+  color: var(--text);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .criterionReason {
-  color: #5c6472;
-}
-
-.cardError {
-  margin: 0;
-  padding: 0.4rem 0.6rem;
-  border-radius: 0.4rem;
-  background: #fdecec;
-  color: #8a1f1f;
-  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 .variantRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: var(--space-1);
 }
 
 .variantButton {
-  padding: 0.3rem 0.7rem;
-  border: 1px solid #d8dce3;
-  border-radius: 999px;
-  background: #fff;
-  color: #33415c;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   cursor: pointer;
 
+  &:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+  }
+
   &:disabled {
-    cursor: default;
+    cursor: not-allowed;
     opacity: 0.55;
   }
 }
 
 .variantActive {
-  border-color: #1c6b3a;
-  background: #e3f2e8;
-  color: #1c6b3a;
+  border-color: transparent;
+  background: var(--beige);
+  color: var(--ink);
   font-weight: 600;
 }
 
 .recommended {
-  color: #5c6472;
+  color: inherit;
   font-weight: 400;
-}
-
-.note,
-.variant {
-  margin: 0;
-  color: #5c6472;
-  font-size: 0.85rem;
+  opacity: 0.75;
 }
 
 .letter {
   margin: 0;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  background: #f7f8fa;
-  color: #232a36;
+  padding: var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--surface-muted);
+  color: var(--text);
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   line-height: 1.5;
   white-space: pre-wrap;
 }
@@ -333,37 +448,6 @@ const sentAtText = computed(() => {
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.button {
-  padding: 0.4rem 0.9rem;
-  border: 1px solid transparent;
-  border-radius: 0.5rem;
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-
-  &:disabled {
-    cursor: default;
-    opacity: 0.5;
-  }
-}
-
-.send {
-  background: #15294b;
-  color: #fff;
-}
-
-.approve {
-  background: #1c6b3a;
-  color: #fff;
-}
-
-.reject {
-  border-color: #d8dce3;
-  background: #fff;
-  color: #8a1f1f;
+  gap: var(--space-1);
 }
 </style>
