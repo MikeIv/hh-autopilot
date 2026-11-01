@@ -33,6 +33,15 @@
   --header-muted: #9fb0c2;
   --header-line: rgb(255 255 255 / 12%);
   --header-track: rgb(255 255 255 / 16%);
+  /* Фон тёмных поверхностей: шапка и панель отправки берут его целиком.
+     Ореол задан в rem, а не в процентах: иначе на высокой панели он уезжает вверх. */
+  --shell-bg:
+    radial-gradient(
+      46rem 14rem at 4% -4rem,
+      color-mix(in srgb, var(--accent) 32%, transparent),
+      transparent 68%
+    ),
+    var(--header-bg);
   --shadow-card: 0 1px 2px rgb(15 21 28 / 6%), 0 12px 32px rgb(15 21 28 / 7%);
   --shadow-pop: 0 18px 40px -18px rgb(15 21 28 / 34%);
   --radius-card: 24px;

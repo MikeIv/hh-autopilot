@@ -375,13 +375,7 @@ const lastRunLabel = computed(() => {
   margin: 0 -20px;
   padding: var(--space-2) 20px;
   border-bottom: 1px solid var(--header-line);
-  background:
-    radial-gradient(
-      46rem 14rem at 4% -70%,
-      color-mix(in srgb, var(--accent) 32%, transparent),
-      transparent 68%
-    ),
-    var(--header-bg);
+  background: var(--shell-bg);
   color: var(--header-ink);
   /* Акцентная полоса по низу шапки: цветовой стык с лентой карточек. */
   box-shadow:
@@ -593,20 +587,15 @@ const lastRunLabel = computed(() => {
  * переменные, поэтому пилюли, дропдауны и кнопки остаются согласованными.
  */
 .apply {
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
+  /* Верх прямой: зелёная кромка должна совпадать с краем блока, без скруглений. */
   border: 1px solid var(--header-line);
-  border-radius: var(--radius-card);
-  background:
-    radial-gradient(
-      26rem 9rem at 108% -30%,
-      color-mix(in srgb, var(--accent) 30%, transparent),
-      transparent 70%
-    ),
-    var(--header-bg);
+  border-top: 2px solid var(--accent);
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  background: var(--shell-bg);
   color: var(--header-ink);
   box-shadow: var(--shadow-card);
   --surface: rgb(255 255 255 / 8%);
@@ -622,16 +611,6 @@ const lastRunLabel = computed(() => {
   --success-bg: rgb(255 255 255 / 12%);
   --danger: #ffb0aa;
   --danger-bg: rgb(255 120 120 / 16%);
-}
-
-/* Зелёная линия по верхней кромке — тот же приём, что у шапки. */
-.apply::before {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 2px;
-  border-radius: var(--radius-card) var(--radius-card) 0 0;
-  background: var(--accent);
-  content: '';
 }
 
 .applyTitle {
