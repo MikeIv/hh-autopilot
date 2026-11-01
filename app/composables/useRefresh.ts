@@ -1,6 +1,6 @@
 import type { RefreshStatus } from '../../shared/types/refresh'
 import type { QueueResponse } from '../../shared/types/queue'
-import { formatRefreshResult } from '../../shared/utils/refresh'
+import { formatRefreshResult } from '#shared/utils/refresh'
 
 /**
  * Обновление выдачи с hh: кнопка запускает прогон, страница опрашивает его
