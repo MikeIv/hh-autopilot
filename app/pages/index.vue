@@ -147,11 +147,7 @@ const lastRunLabel = computed(() => {
 
           <div :class="$style.topbarActions">
             <div :class="$style.refresh">
-              <UiButton
-                variant="accent"
-                :disabled="refreshing || applyActive"
-                @click="refreshFromHh"
-              >
+              <UiButton :disabled="refreshing || applyActive" @click="refreshFromHh">
                 {{ refreshing ? 'Обновляю выдачу…' : 'Обновить с hh' }}
               </UiButton>
               <span :class="$style.refreshTime">{{ lastRefreshText }}</span>
@@ -391,6 +387,10 @@ const lastRunLabel = computed(() => {
   box-shadow:
     inset 0 -2px 0 var(--accent),
     0 16px 36px -30px rgb(10 17 24 / 95%);
+  /* На тёмной поверхности главная кнопка — яркий акцент, а не чернила. */
+  --action-bg: var(--accent-bright);
+  --action-text: var(--accent-ink);
+  --action-hover-bg: color-mix(in srgb, var(--accent-bright) 84%, white);
 }
 
 .brand {
@@ -587,21 +587,69 @@ const lastRunLabel = computed(() => {
   }
 }
 
+/*
+ * Панель отправки — тёмный «остров» в языке шапки: так блок управления не читается
+ * как ещё одна карточка вакансии. Вложенные элементы берут цвета через локальные
+ * переменные, поэтому пилюли, дропдауны и кнопки остаются согласованными.
+ */
 .apply {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
-  border: 1px solid var(--line);
+  border: 1px solid var(--header-line);
   border-radius: var(--radius-card);
-  background: var(--surface);
+  background:
+    radial-gradient(
+      26rem 9rem at 108% -30%,
+      color-mix(in srgb, var(--accent) 30%, transparent),
+      transparent 70%
+    ),
+    var(--header-bg);
+  color: var(--header-ink);
   box-shadow: var(--shadow-card);
+  --surface: rgb(255 255 255 / 8%);
+  --surface-muted: rgb(255 255 255 / 12%);
+  --text: var(--header-ink);
+  --text-muted: var(--header-muted);
+  --line: rgb(255 255 255 / 16%);
+  --line-strong: rgb(255 255 255 / 30%);
+  --action-bg: var(--accent-bright);
+  --action-text: var(--accent-ink);
+  --action-hover-bg: color-mix(in srgb, var(--accent-bright) 84%, white);
+  --success: var(--accent-bright);
+  --success-bg: rgb(255 255 255 / 12%);
+  --danger: #ffb0aa;
+  --danger-bg: rgb(255 120 120 / 16%);
+}
+
+/* Зелёная линия по верхней кромке — тот же приём, что у шапки. */
+.apply::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: var(--accent);
+  content: '';
 }
 
 .applyTitle {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
+}
+
+.applyTitle::before {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-bright);
+  content: '';
 }
 
 .stateRow {
