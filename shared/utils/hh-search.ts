@@ -31,13 +31,29 @@ export function hhArea(city: string): string {
   return area
 }
 
+/** Слово роли в запросе: без него hh ищет по любому упоминанию специальности. */
+const ROLE_WORD = /(разработчик|программист|инженер|developer|engineer)/i
+
+/**
+ * Заголовок резюме → запросы: «Frontend / Nuxt fullstack разработчик» — это две
+ * роли, а не одна строка, которую hh не найдёт. Одна специальность без слова
+ * роли («Frontend») дополняется до «Frontend разработчик».
+ */
+function labelQueries(label: string): string[] {
+  return label
+    .replace(/\s*\([^)]*\)$/, '')
+    .trim()
+    .split('/')
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .map((part) => (ROLE_WORD.test(part) ? part : `${part} разработчик`))
+}
+
 /**
  * Роли для поиска: заголовок резюме без скобок и технологии из ключевых навыков.
  * Список запросов — не отдельный источник правды: он выводится из портрета.
  */
 export function searchQueries(portrait: CandidatePortrait, limit = 4): string[] {
-  const label = portrait.basics.label.replace(/\s*\([^)]*\)$/, '').trim()
-
   const roles: ReadonlyArray<readonly [string, string]> = [
     ['Nuxt', 'Nuxt разработчик'],
     ['Vue', 'Vue разработчик'],
@@ -49,7 +65,7 @@ export function searchQueries(portrait: CandidatePortrait, limit = 4): string[] 
     .filter(([tech]) => keywords.some((keyword) => keyword.startsWith(tech.toLowerCase())))
     .map(([, query]) => query)
 
-  return [...new Set([label, ...queries])].slice(0, limit)
+  return [...new Set([...labelQueries(portrait.basics.label), ...queries])].slice(0, limit)
 }
 
 /** Адрес выдачи hh: запрос, регион и форматы — из портрета, страница — из аргумента. */

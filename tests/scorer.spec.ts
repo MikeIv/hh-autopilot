@@ -72,7 +72,7 @@ describe('скоринг вакансии', () => {
     expect(criterion(result, 'stack')?.reason).toContain('стека Nuxt')
     expect(criterion(result, 'stack')?.matches?.[0]).toBe('Nuxt')
     expect(criterion(result, 'role')?.reason).toContain('профилем')
-    expect(criterion(result, 'role')?.reason).toContain('(fullstack)')
+    expect(criterion(result, 'role')?.reason).toContain('(frontend, fullstack)')
     expect(criterion(result, 'format')?.reason).toContain('remote')
     expect(criterion(result, 'experience')?.reason).toContain('нужно от 6 лет')
     expect(criterion(result, 'salary')?.reason).toContain('300000')

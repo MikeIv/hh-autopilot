@@ -51,10 +51,10 @@ describe('запросы и фильтры из портрета', () => {
     const portrait = await loadPortrait()
 
     expect(searchQueries(portrait)).toEqual([
+      'Frontend разработчик',
       'Nuxt fullstack разработчик',
       'Nuxt разработчик',
       'Vue разработчик',
-      'TypeScript fullstack разработчик',
     ])
   })
 
