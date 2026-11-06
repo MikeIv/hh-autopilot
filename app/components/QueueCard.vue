@@ -192,7 +192,12 @@ const sentAtText = computed(() => {
           :disabled="!canEditLetter || busy"
           @click="emit('choose', draft.variant)"
         >
-          <UiLoader v-if="choosing && choosingVariant === draft.variant" size="sm" decorative />
+          <UiLoader
+            v-if="choosing && choosingVariant === draft.variant"
+            size="sm"
+            tone="inherit"
+            decorative
+          />
           {{ VARIANT_LABELS[draft.variant] }}
           <span v-if="draft.recommended" :class="$style.recommended">· рекоменд.</span>
         </button>
@@ -206,15 +211,15 @@ const sentAtText = computed(() => {
 
     <footer :class="$style.actions">
       <UiButton v-if="canSend" :disabled="busy" @click="emit('send')">
-        <UiLoader v-if="sending" size="sm" decorative />
+        <UiLoader v-if="sending" size="sm" tone="inherit" decorative />
         {{ sending ? 'Отправляю…' : 'Отправить сейчас' }}
       </UiButton>
       <UiButton :disabled="busy || !canDecide" @click="emit('decide', 'approve')">
-        <UiLoader v-if="pending && decision === 'approve'" size="sm" decorative />
+        <UiLoader v-if="pending && decision === 'approve'" size="sm" tone="inherit" decorative />
         {{ approveLabel }}
       </UiButton>
       <UiButton variant="danger" :disabled="busy || !canDecide" @click="emit('decide', 'reject')">
-        <UiLoader v-if="pending && decision === 'reject'" size="sm" decorative />
+        <UiLoader v-if="pending && decision === 'reject'" size="sm" tone="inherit" decorative />
         Отклонить
       </UiButton>
     </footer>
